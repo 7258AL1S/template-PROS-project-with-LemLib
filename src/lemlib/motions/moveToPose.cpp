@@ -11,7 +11,7 @@ namespace lemlib {
 static logger::Helper logHelper("lemlib/motions/moveToPose");
 
 void moveToPose(Pose target, Time timeout, MoveToPoseParams params, MoveToPoseSettings settings) {
-    // initialize persistent variables
+    // 初始化持久变量
     Pose lastPose = settings.poseGetter();
     Timer timer(timeout);
     bool close = false;
@@ -20,27 +20,26 @@ void moveToPose(Pose target, Time timeout, MoveToPoseParams params, MoveToPoseSe
     Number prevAngularOut = 0;
 
     lemlib::MotionCancelHelper helper(10_msec);
-    // loop until the motion has been cancelled, or the timer is done
+    // 循环直到运动被取消或超时
     while (helper.wait() && !timer.isDone()) {
         const Pose pose = settings.poseGetter();
 
-        // check if the robot is close enough to the target to start settling
+        // 检查机器人是否足够接近目标，进入沉降阶段
         if (pose.distanceTo(target) < 7.5_in && close == false) {
             close = true;
             params.maxLateralSpeed = max(abs(prevLateralOut), 0.47);
         }
 
-        // find the carrot point
+        // 计算胡萝卜点（引导点）
         const V2Position carrot = [&] -> V2Position {
             if (close) return target;
             return target - V2Position::fromPolar(target.orientation, params.lead * pose.distanceTo(target));
         }();
 
-        // calculate error
+        // 计算误差
         const Length lateralError = [&] {
             Length out = pose.distanceTo(target);
-            // only use cosine scaling while settling
-            // but always use the sign of the scalar
+            // 沉降阶段使用全余弦缩放，远距离仅用符号
             const Number scalar = cos(angleError(pose.orientation, pose.angleTo(carrot)));
             if (close) out *= scalar;
             else out *= sgn(scalar);
@@ -52,7 +51,7 @@ void moveToPose(Pose target, Time timeout, MoveToPoseParams params, MoveToPoseSe
             else return angleError(adjustedTheta, pose.angleTo(carrot));
         }();
 
-        // check exit conditions
+        // 检查退出条件（需同时满足横向和角向）
         if (settings.lateralExitConditions.update(lateralError) &&
             settings.angularExitConditions.update(angularError) && close) {
             break;
@@ -63,59 +62,59 @@ void moveToPose(Pose target, Time timeout, MoveToPoseParams params, MoveToPoseSe
             const bool carrotSide = (carrot.y - target.y) * -sin(target.orientation) <=
                                     (carrot.x - target.x) * cos(target.orientation) + params.earlyExitRange;
             const bool sameSide = robotSide == carrotSide;
-            // exit if close
+            // 机器人越过目标朝向垂线则退出
             if (!sameSide && prevSameSide && close && params.minLateralSpeed != 0) break;
             prevSameSide = sameSide;
         }
 
-        // get lateral and angular outputs
+        // 计算横向和角向输出
         const Number angularOut = [&] -> Number {
-            // get output from PID
+            // 从 PID 获取原始输出
             Number out = settings.angularPID.update(to_stRad(angularError));
-            // restrict maximum speed
+            // 限制最大速度
             out = clamp(out, -params.maxAngularSpeed, params.maxAngularSpeed);
-            // update prevAngularOut
+            // 更新前次角向输出
             prevAngularOut = out;
             return out;
         }();
         const Number lateralOut = [&] -> Number {
-            // get output from PID
+            // 从 PID 获取原始输出
             Number out = settings.lateralPID.update(to_m(lateralError));
-            // restrict maximum speed
+            // 限制最大速度
             out = clamp(out, -params.maxLateralSpeed, params.maxLateralSpeed);
-            // limit acceleration
+            // 非沉降阶段限制加速度
             if (!close) out = slew(out, prevLateralOut, params.lateralSlew, helper.getDelta());
-            // prevent slipping
+            // 防侧滑：根据转弯半径限制速度
             const Length radius = 1 / abs(getSignedTangentArcCurvature(pose, carrot));
             const Number maxSlipSpeed = sqrt(params.driftCompensation * to_m(radius));
             out = clamp(out, -maxSlipSpeed, maxSlipSpeed);
-            // prioritize angular movement over lateral movement
+            // 角向优先：角向功率不足时削减横向
             const Number overturn = abs(angularOut) + abs(out) - params.maxLateralSpeed;
             if (overturn > 0) out -= out > 0 ? overturn : -overturn;
-            // prevent moving in the wrong direction
+            // 防止反向运动（远距离严格单向）
             if (params.reversed && !close) out = units::min(out, 0);
             else if (!params.reversed && !close) out = max(out, 0);
-            // constrain by minimum speed
+            // 限制最小速度（克服静摩擦）
             if (params.reversed && -out < abs(params.minLateralSpeed) && out < 0) out = -abs(params.minLateralSpeed);
             else if (!params.reversed && out < abs(params.minLateralSpeed) && out > 0)
                 out = abs(params.minLateralSpeed);
-            // update prevLateralOut
+            // 更新前次横向输出
             prevLateralOut = out;
             return out;
         }();
 
-        // print debug info
+        // 输出调试信息
         logHelper.debug("Moving with {:.4f} lateral power, {:.4f} angular power, {:.4f} lateral error, {:.4f} angular "
                         "error, {:.4f} dt",
                         lateralOut, angularOut, lateralError, angularError, helper.getDelta());
 
-        // calculate drivetrain outputs
+        // 计算底盘输出
         const auto out = desaturate(lateralOut, angularOut);
-        // move the drivetrain
+        // 驱动底盘
         settings.leftMotors.move(out.left);
         settings.rightMotors.move(out.right);
     }
-    // stop motors
+    // 停止电机
     settings.leftMotors.brake();
     settings.rightMotors.brake();
 }
