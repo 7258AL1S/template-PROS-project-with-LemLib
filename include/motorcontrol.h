@@ -49,3 +49,17 @@ void Lift_simple(int joystickValue);
  */
 void Claw_control(int BtnPressed);
 
+
+/**
+ * @brief 底盘控制
+ * @param dir  前进/后退量
+ * @param turn 转向量
+ */
+void drive(int dir, int turn);
+
+/**
+ * @brief LemLib 里程计初始化（IMU 校准 + 定位轮启动）
+ * 在 initialize() 中调用
+ */
+void lemLibInit();
+

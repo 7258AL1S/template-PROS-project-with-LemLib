@@ -134,7 +134,7 @@ float Lift(int joystickValue) {
 
 
 
-
+//无PID控制的简化LiftControl
 void Lift_simple(int joystickValue) {
 	// 读取当前升降角度（PROS Rotation 返回厘度，÷100 转度）
 	float currentAngle = liftRotation.get_angle() / 100.0f;
@@ -190,6 +190,8 @@ void Lift_simple(int joystickValue) {
 
 
 
+
+
 //爪子（按下↔再按下切换 + 双向堵转检测）
 // 状态机：每次 L1 按下（上升沿）在夹紧/松开之间切换
 void Claw_control(int BtnPressed) {
@@ -202,9 +204,11 @@ void Claw_control(int BtnPressed) {
 	static uint32_t lastTime     = 0;       // 上次调用时间
 	static bool     firstCall    = true;    // 首次调用初始化
 
-	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);// 旋转电机保持当前位置不动
+	Claw_Rot.brake();
 
-	const uint32_t now = pros::millis();
+
+	const uint32_t now = pros::millis();// 当前时间戳（毫秒）
 	if (firstCall) {
 		lastPos   = Claw.get_position();
 		lastTime  = now;
@@ -218,13 +222,13 @@ void Claw_control(int BtnPressed) {
 	}
 	prevBtn = BtnPressed;
 
-	constexpr int     kPower       = 40;    // 基础功率
+	constexpr int     kPower       = 60;    // 基础功率
 	constexpr double  kStallThresh = 0.5;   // 堵转速度阈值（deg/ms）
 	constexpr uint32_t kStallTime  = 200;   // 持续堵转触发时间（ms）
 
-	const double   currentPos = Claw.get_position();
+	const double   currentPos = Claw.get_position();// 当前编码器位置（度）
 	const uint32_t dt         = now - lastTime;
-	const double   velocity   = (dt > 0) ? std::fabs(currentPos - lastPos) / dt : 0.0;
+	const double   velocity   = (dt > 0) ? std::fabs(currentPos - lastPos) / dt : 0.0;// 计算速度（deg/ms）
 	lastPos  = currentPos;
 	lastTime = now;
 
@@ -263,4 +267,22 @@ void Claw_control(int BtnPressed) {
 			}
 		}
 	}
+}
+
+
+
+
+const int kDeadzone = 10; // 摇杆死区阈值
+//底盘电机控制
+void drive(int dir,int turn){
+	left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	
+	if(fabs(dir) < kDeadzone || fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
+		left_mg.brake();
+		right_mg.brake();
+	} else {
+		left_mg.move(dir + turn);      // 设置左电机电压
+		right_mg.move(dir - turn);     // 设置右电机电压
+	} 
 }

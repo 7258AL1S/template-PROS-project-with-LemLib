@@ -1,6 +1,10 @@
 #include "main.h"
 #include "motorcontrol.h"
 #include "sensor.h"
+#include "api.h"
+#include "lemlib/lemlib.hpp"
+
+
 /**
  * @brief LLEMU 中央按钮的回调函数
  *
@@ -26,6 +30,8 @@ void initialize() {
 	pros::lcd::set_text(1, "AL-1S");
 
 	pros::lcd::register_btn1_cb(on_center_button);
+
+	lemLibInit(); // 初始化 LemLib（IMU 校准 + 里程计启动）
 }
 
 /**
@@ -50,7 +56,12 @@ void competition_initialize() {}
  * 如果机器人被禁用或通信中断，autonomous task 将被停止。
  * 重新启用将重启 task，而非从中断处恢复。
  */
-void autonomous() {}
+void autonomous() {
+	// 向前移动 10 英寸，超时 5 秒
+	lemlib::MoveToPointParams params;
+	lemlib::MoveToPointSettings settings;
+	lemlib::moveToPoint({10_in, 0_in}, 5000_msec, params, settings);
+}
 
 /**
  * 运行操作手控代码。此函数在独立 task 中以默认优先级和栈大小启动，
@@ -74,14 +85,18 @@ void opcontrol() {
 		// Arcade 操控模式
 		int dir = master.get_analog(ANALOG_LEFT_Y);    // 从左摇杆获取前进/后退量
 		int turn = master.get_analog(ANALOG_LEFT_X);   // 从左摇杆获取左转/右转量
-		left_mg.move(dir + turn);                      // 设置左电机电压
-		right_mg.move(dir - turn);   
-		                  // 设置右电机电压
+		drive(dir, turn);                             // 调用底盘控制函数，传入前进/后退和转向量
+
+
+		// Lift 升降控制
 		int joystickValue = master.get_analog(ANALOG_RIGHT_Y);       // 从右摇杆获取升降控制量
 		Lift_simple(joystickValue);       // 右摇杆推上→上升，拉下→下降
 		
+
+		// Claw 夹爪控制
 		int BtnPressed = master.get_digital(DIGITAL_L1);  // L1 按下→夹紧，再按→松开（toggle）
 		Claw_control(BtnPressed);  // L1 按下→夹紧，松开→放松
+
 		pros::delay(20);                               // 等待 20ms 后进入下一帧
 	}
 }
