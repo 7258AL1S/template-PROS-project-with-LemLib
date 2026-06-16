@@ -1,10 +1,10 @@
 #include "main.h"
-
+#include "motorcontrol.h"
+#include "sensor.h"
 /**
- * A callback function for LLEMU's center button.
+ * @brief LLEMU 中央按钮的回调函数
  *
- * When this callback is fired, it will toggle line 2 of the LCD text between
- * "I was pressed!" and nothing.
+ * 当此回调被触发时，将第 2 行 LCD 文本在 "I was pressed!" 和空白之间切换。
  */
 void on_center_button() {
 	static bool pressed = false;
@@ -17,78 +17,71 @@ void on_center_button() {
 }
 
 /**
- * Runs initialization code. This occurs as soon as the program is started.
+ * 运行初始化代码，在程序启动后立即执行。
  *
- * All other competition modes are blocked by initialize; it is recommended
- * to keep execution time for this mode under a few seconds.
+ * 初始化期间所有其他竞赛模式被阻塞；建议执行时间控制在数秒内。
  */
 void initialize() {
 	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
+	pros::lcd::set_text(1, "AL-1S");
 
 	pros::lcd::register_btn1_cb(on_center_button);
 }
 
 /**
- * Runs while the robot is in the disabled state of Field Management System or
- * the VEX Competition Switch, following either autonomous or opcontrol. When
- * the robot is enabled, this task will exit.
+ * 在机器人被禁用时运行（竞赛模式中 autonomous 或 opcontrol 之后）。
+ * 当机器人被重新启用时，此 task 将退出。
  */
 void disabled() {}
 
 /**
- * Runs after initialize(), and before autonomous when connected to the Field
- * Management System or the VEX Competition Switch. This is intended for
- * competition-specific initialization routines, such as an autonomous selector
- * on the LCD.
+ * 在 initialize() 之后、autonomous 之前运行（仅竞赛模式）。
+ * 用于竞赛特定初始化，如 LCD 自动选择器。
  *
- * This task will exit when the robot is enabled and autonomous or opcontrol
- * starts.
+ * 机器人被启用并进入 autonomous 或 opcontrol 时，此 task 退出。
  */
 void competition_initialize() {}
 
 /**
- * Runs the user autonomous code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the autonomous
- * mode. Alternatively, this function may be called in initialize or opcontrol
- * for non-competition testing purposes.
+ * 运行用户自动代码。此函数在独立 task 中以默认优先级和栈大小启动，
+ * 每当机器人通过 FMS 或 VEX 竞赛开关在自动模式下被启用时调用。
+ * 也可在 initialize 或 opcontrol 中调用以进行非竞赛测试。
  *
- * If the robot is disabled or communications is lost, the autonomous task
- * will be stopped. Re-enabling the robot will restart the task, not re-start it
- * from where it left off.
+ * 如果机器人被禁用或通信中断，autonomous task 将被停止。
+ * 重新启用将重启 task，而非从中断处恢复。
  */
 void autonomous() {}
 
 /**
- * Runs the operator control code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the operator
- * control mode.
+ * 运行操作手控代码。此函数在独立 task 中以默认优先级和栈大小启动，
+ * 每当机器人通过 FMS 或 VEX 竞赛开关在手动模式下被启用时调用。
  *
- * If no competition control is connected, this function will run immediately
- * following initialize().
+ * 如未连接竞赛控制，此函数将在 initialize() 之后立即运行。
  *
- * If the robot is disabled or communications is lost, the
- * operator control task will be stopped. Re-enabling the robot will restart the
- * task, not resume it from where it left off.
+ * 如果机器人被禁用或通信中断，opcontrol task 将被停止。
+ * 重新启用将重启 task，而非从中断处恢复。
  */
 void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::MotorGroup left_mg({1, -2, 3});    // Creates a motor group with forwards ports 1 & 3 and reversed port 2
-	pros::MotorGroup right_mg({-4, 5, -6});  // Creates a motor group with forwards port 5 and reversed ports 4 & 6
+	
 
 
 	while (true) {
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
 		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // Prints status of the emulated screen LCDs
+		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // 打印模拟屏幕 LCD 按键状态
 
-		// Arcade control scheme
-		int dir = master.get_analog(ANALOG_LEFT_Y);    // Gets amount forward/backward from left joystick
-		int turn = master.get_analog(ANALOG_LEFT_X);   // Gets the turn left/right from left joystick
-		left_mg.move(dir - turn);                      // Sets left motor voltage
-		right_mg.move(dir + turn);                     // Sets right motor voltage
-		pros::delay(20);                               // Run for 20 ms then update
+		// Arcade 操控模式
+		int dir = master.get_analog(ANALOG_LEFT_Y);    // 从左摇杆获取前进/后退量
+		int turn = master.get_analog(ANALOG_LEFT_X);   // 从左摇杆获取左转/右转量
+		left_mg.move(dir + turn);                      // 设置左电机电压
+		right_mg.move(dir - turn);   
+		                  // 设置右电机电压
+		int joystickValue = master.get_analog(ANALOG_RIGHT_Y);       // 从右摇杆获取升降控制量
+		Lift_simple(joystickValue);       // 右摇杆推上→上升，拉下→下降
+		
+		int BtnPressed = master.get_digital(DIGITAL_L1);  // L1 按下→夹紧，松开→放松
+		Claw_control(BtnPressed);  // L1 按下→夹紧，松开→放松
+		pros::delay(20);                               // 等待 20ms 后进入下一帧
 	}
 }
