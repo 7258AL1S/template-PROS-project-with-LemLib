@@ -190,13 +190,77 @@ void Lift_simple(int joystickValue) {
 
 
 
-//爪子
-void Claw_control(int BtnPressed){
+//爪子（按下↔再按下切换 + 双向堵转检测）
+// 状态机：每次 L1 按下（上升沿）在夹紧/松开之间切换
+void Claw_control(int BtnPressed) {
+	static bool     latched      = false;   // 闩锁状态：false=松开, true=夹紧
+	static int      prevBtn      = 0;       // 上一次按钮状态（边缘检测）
+	static bool     clampStalled = false;   // 夹紧方向堵转
+	static bool     openStalled  = false;   // 松开方向堵转
+	static uint32_t stallTimer   = 0;       // 堵转计时起点
+	static double   lastPos      = 0;       // 上次编码器位置
+	static uint32_t lastTime     = 0;       // 上次调用时间
+	static bool     firstCall    = true;    // 首次调用初始化
+
 	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	if(BtnPressed){
-		Claw.move(40);  // R1 按下→夹紧
-	}else{
-		Claw.move(-40);    // 松开→放松
+
+	const uint32_t now = pros::millis();
+	if (firstCall) {
+		lastPos   = Claw.get_position();
+		lastTime  = now;
+		prevBtn   = BtnPressed;
+		firstCall = false;
 	}
 
+	// === 上升沿检测：按钮从未按下→按下，切换闩锁 ===
+	if (prevBtn == 0 && BtnPressed == 1) {
+		latched = !latched;
+	}
+	prevBtn = BtnPressed;
+
+	constexpr int     kPower       = 40;    // 基础功率
+	constexpr double  kStallThresh = 0.5;   // 堵转速度阈值（deg/ms）
+	constexpr uint32_t kStallTime  = 200;   // 持续堵转触发时间（ms）
+
+	const double   currentPos = Claw.get_position();
+	const uint32_t dt         = now - lastTime;
+	const double   velocity   = (dt > 0) ? std::fabs(currentPos - lastPos) / dt : 0.0;
+	lastPos  = currentPos;
+	lastTime = now;
+
+	if (latched) {
+		// ====== 夹紧方向 ======
+		openStalled = false;
+
+		if (clampStalled) {
+			Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			Claw.brake();
+		} else {
+			Claw.move(kPower);
+
+			if (velocity < kStallThresh) {
+				if (stallTimer == 0) stallTimer = now;
+				else if (now - stallTimer > kStallTime) { clampStalled = true; stallTimer = 0; }
+			} else {
+				stallTimer = 0;
+			}
+		}
+	} else {
+		// ====== 松开方向 ======
+		clampStalled = false;
+
+		if (openStalled) {
+			Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			Claw.brake();
+		} else {
+			Claw.move(-kPower);
+
+			if (velocity < kStallThresh) {
+				if (stallTimer == 0) stallTimer = now;
+				else if (now - stallTimer > kStallTime) { openStalled = true; stallTimer = 0; }
+			} else {
+				stallTimer = 0;
+			}
+		}
+	}
 }

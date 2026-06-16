@@ -80,7 +80,7 @@ void opcontrol() {
 		int joystickValue = master.get_analog(ANALOG_RIGHT_Y);       // 从右摇杆获取升降控制量
 		Lift_simple(joystickValue);       // 右摇杆推上→上升，拉下→下降
 		
-		int BtnPressed = master.get_digital(DIGITAL_L1);  // L1 按下→夹紧，松开→放松
+		int BtnPressed = master.get_digital(DIGITAL_L1);  // L1 按下→夹紧，再按→松开（toggle）
 		Claw_control(BtnPressed);  // L1 按下→夹紧，松开→放松
 		pros::delay(20);                               // 等待 20ms 后进入下一帧
 	}
