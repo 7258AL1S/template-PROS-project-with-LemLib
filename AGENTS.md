@@ -62,6 +62,25 @@ namespace ll = lemlib;
 namespace mh = lemlib::motion_handler;
 ```
 
+### 硬件对象统一定义在 `sensor.cpp`
+
+所有直接操作端口的硬件对象（电机、IMU、编码器、Rotation Sensor 等）**必须**在 [`src/sensor.cpp`](src/sensor.cpp) 中定义，在 [`include/sensor.h`](include/sensor.h) 中 `extern` 声明。
+
+```cpp
+// sensor.h — 声明
+extern pros::Motor       Claw;
+extern lemlib::V5InertialSensor imu;
+
+// sensor.cpp — 定义
+pros::Motor              Claw(11);
+lemlib::V5InertialSensor imu(15);
+```
+
+其他文件通过 `#include "sensor.h"` 引用，**禁止**在其他 `.cpp` 中重复定义同一端口的硬件对象。理由：
+- 避免**端口冲突**（同端口被两个对象初始化导致运行时错误）
+- 避免**静态初始化顺序问题**（跨编译单元的全局对象构造顺序未定义）
+- 统一管理所有端口，易于接线变更
+
 ### 优化级别
 `-Os`（体积优化），ARM Cortex-A9 + NEON FPU + hard float ABI。
 
