@@ -223,8 +223,8 @@ void Claw_control(int BtnPressed) {
 	prevBtn = BtnPressed;
 
 	constexpr int     kPower       = 100;    // 基础功率
-	constexpr double  kStallThresh = 0.5;   // 堵转速度阈值（deg/ms）
-	constexpr uint32_t kStallTime  = 200;   // 持续堵转触发时间（ms）
+	constexpr double  kStallThresh = 0.4;   // 堵转速度阈值（deg/ms）
+	constexpr uint32_t kStallTime  = 350;   // 持续堵转触发时间（ms）
 
 	const double   currentPos = Claw.get_position();// 当前编码器位置（度）
 	const uint32_t dt         = now - lastTime;
@@ -239,7 +239,7 @@ void Claw_control(int BtnPressed) {
 		if (clampStalled) {
 			//Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 			//Claw.brake();
-			Claw.move(0.2 * kPower);
+			Claw.move(0.5 * kPower);
 		} else {
 			Claw.move(kPower);
 
@@ -271,6 +271,60 @@ void Claw_control(int BtnPressed) {
 }
 
 
+// ============================================================
+// 爪子定时控制（单键 L1 切换夹紧/松开）
+// 夹紧：全功率 200ms → 低功率保持
+// 松开：全功率 200ms → HOLD 刹车
+// ============================================================
+void Claw_control_time(int BtnPressed) {
+	enum Phase { IDLE, FULL, DONE };      // IDLE=待命, FULL=全功率脉冲中, DONE=脉冲结束
+	static Phase    phase       = IDLE;    // 当前阶段
+	static uint32_t phaseStart  = 0;       // 阶段起始时间
+	static bool     lastBtn     = false;   // 上次按钮状态（边缘检测）
+	static bool     closed      = false;   // 当前目标：true=夹紧, false=松开
+
+	constexpr uint32_t kPulseMs = 200;     // 全功率脉冲时长
+	constexpr int      kFull    = 100;     // 全功率
+	constexpr int      kHold    = 20;      // 保持功率
+
+	const uint32_t now = pros::millis();
+
+	// 上升沿检测：按钮从未按下 → 按下，切换夹紧/松开
+	if (!lastBtn && BtnPressed) {
+		closed     = !closed;
+		phase      = FULL;
+		phaseStart = now;
+	}
+	lastBtn = BtnPressed;
+
+	const uint32_t elapsed = now - phaseStart;
+
+	switch (phase) {
+	case FULL:
+		// 全功率脉冲阶段
+		Claw.move(closed ? kFull : -kFull);
+		if (elapsed >= kPulseMs) { phase = DONE; }
+		break;
+
+	case DONE:
+		// 脉冲结束
+		if (closed) {
+			// 夹紧：低功率保持
+			Claw.move(kHold);
+		} else {
+			// 松开：HOLD 锁死
+			Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			Claw.brake();
+		}
+		break;
+
+	case IDLE:
+	default:
+		break;
+	}
+}
+
+
 
 
 const int kDeadzone = 10; // 摇杆死区阈值
@@ -279,7 +333,7 @@ void drive(int dir,int turn){
 	left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	
-	if(fabs(dir) < kDeadzone || fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
+	if(fabs(dir) < kDeadzone && fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
 		left_mg.brake();
 		right_mg.brake();
 	} else {

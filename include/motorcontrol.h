@@ -49,6 +49,29 @@ void Lift_simple(int joystickValue);
  */
 void Claw_control(int BtnPressed);
 
+/**
+ * @brief 爪子定时控制（单键切换 + 脉冲时序）
+ * @param BtnPressed 按键按下状态 (1=按下, 0=松开)
+ *
+ * 时序：按键按下 → 全功率 200ms → 反向全功率 200ms → 低功率保持
+ * 再次按下反向执行。
+ */
+void Claw_control_time(int BtnPressed);
+
+/**
+ * @brief 底盘电机控制（Arcade Drive）
+ * @param dir  前进/后退量 [-127, 127]
+ * @param turn 左转/右转量 [-127, 127]
+ */
+void drive(int dir, int turn);
+
+
+/**
+ * @brief 爪子控制(时间控制)
+ * @param BtnPressed 按键按下状态
+ */
+void Claw_control_time(int BtnPressed);
+
 
 /**
  * @brief 底盘控制
