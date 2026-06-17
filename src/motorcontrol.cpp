@@ -222,7 +222,7 @@ void Claw_control(int BtnPressed) {
 	}
 	prevBtn = BtnPressed;
 
-	constexpr int     kPower       = 60;    // 基础功率
+	constexpr int     kPower       = 100;    // 基础功率
 	constexpr double  kStallThresh = 0.5;   // 堵转速度阈值（deg/ms）
 	constexpr uint32_t kStallTime  = 200;   // 持续堵转触发时间（ms）
 
@@ -237,8 +237,9 @@ void Claw_control(int BtnPressed) {
 		openStalled = false;
 
 		if (clampStalled) {
-			Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-			Claw.brake();
+			//Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			//Claw.brake();
+			Claw.move(0.2 * kPower);
 		} else {
 			Claw.move(kPower);
 
