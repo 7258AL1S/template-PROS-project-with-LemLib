@@ -139,13 +139,9 @@ void Lift_simple(int joystickValue) {
 	// 读取当前升降角度（PROS Rotation 返回厘度，÷100 转度）
 	float currentAngle = liftRotation.get_angle() / 100.0f;
 
-	// 接近顶部 267° ± 5°：减速防撞顶
-	if (currentAngle >= 263.0f && currentAngle <= 269.0f) {
-		joystickValue = static_cast<int>(joystickValue * 0.4f);
-	}
-	// 接近底部 0° ± 8°（含 359→0 环绕）：减速防撞底
-	if (currentAngle >= 352.0f || currentAngle <= 8.0f) {
-		joystickValue = static_cast<int>(joystickValue * 0.6f);
+	// 仅下降时接近底部 ±8°（含 359→0 环绕）：减速防撞底
+	if (joystickValue < 0 && (currentAngle >= 346.0f || currentAngle <= 8.0f)) {
+		joystickValue = static_cast<int>(joystickValue * 0.3f);
 	}
 
 	// ============================================================
@@ -154,7 +150,7 @@ void Lift_simple(int joystickValue) {
 	static float     rampTargetPower = 0;       // 缓降起点功率
 	static uint32_t  rampStartTime   = 0;       // 缓降开始时间戳
 	static bool      ramping          = false;   // 是否正在缓降
-	constexpr uint32_t kRampMs = 150;            // 缓降时长（毫秒）
+	constexpr uint32_t kRampMs = 300;            // 缓降时长（毫秒）
 
 	if (joystickValue > 25 || joystickValue < -25) {
 		// ———— 摇杆活动区：正常驱动 ————
@@ -174,10 +170,16 @@ void Lift_simple(int joystickValue) {
 		uint32_t elapsed = pros::millis() - rampStartTime;
 		if (elapsed < kRampMs) {
 			// 线性缓降：rampTargetPower → 0
+			/*
 			float t = static_cast<float>(elapsed) / kRampMs;
 			float power = rampTargetPower * (1.0f - t);
 			lift1.move(power);
 			lift2.move(power);
+			*/
+			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift1.brake();
+			lift2.brake();
 		} else {
 			// 缓降完成 → HOLD 锁死
 			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
@@ -277,51 +279,37 @@ void Claw_control(int BtnPressed) {
 // 松开：全功率 200ms → HOLD 刹车
 // ============================================================
 void Claw_control_time(int BtnPressed) {
-	enum Phase { IDLE, FULL, DONE };      // IDLE=待命, FULL=全功率脉冲中, DONE=脉冲结束
-	static Phase    phase       = IDLE;    // 当前阶段
-	static uint32_t phaseStart  = 0;       // 阶段起始时间
-	static bool     lastBtn     = false;   // 上次按钮状态（边缘检测）
-	static bool     closed      = false;   // 当前目标：true=夹紧, false=松开
+	static uint32_t pulseStart = 0;     // 脉冲起始时间
+	static bool     lastBtn     = false; // 上次按钮状态
+	static bool     closed      = false; // 当前：夹紧/松开
+	static bool     holdd      = false;
+	constexpr uint32_t kPulseMs = 200;  // 全功率时长
+	constexpr int      kFull    = 100;  // 全功率
+	constexpr int      kHold    = 20;   // 保持功率
 
-	constexpr uint32_t kPulseMs = 200;     // 全功率脉冲时长
-	constexpr int      kFull    = 100;     // 全功率
-	constexpr int      kHold    = 20;      // 保持功率
-
-	const uint32_t now = pros::millis();
-
-	// 上升沿检测：按钮从未按下 → 按下，切换夹紧/松开
+	// 上升沿：切换夹紧/松开
 	if (!lastBtn && BtnPressed) {
-		closed     = !closed;
-		phase      = FULL;
-		phaseStart = now;
-	}
+		closed = !closed;
+		 pulseStart = pros::millis();
+		 }
 	lastBtn = BtnPressed;
 
-	const uint32_t elapsed = now - phaseStart;
+	uint32_t elapsed = pros::millis() - pulseStart;
 
-	switch (phase) {
-	case FULL:
+	if (elapsed < kPulseMs) {
 		// 全功率脉冲阶段
 		Claw.move(closed ? kFull : -kFull);
-		if (elapsed >= kPulseMs) { phase = DONE; }
-		break;
-
-	case DONE:
+	} else {
 		// 脉冲结束
-		if (closed) {
-			// 夹紧：低功率保持
-			Claw.move(kHold);
-		} else {
-			// 松开：HOLD 锁死
+		if (!closed && holdd) Claw.move(-kHold);
+		else {
 			Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-			Claw.brake();
+			Claw.brake(); 
 		}
-		break;
-
-	case IDLE:
-	default:
-		break;
 	}
+
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.brake();
 }
 
 
