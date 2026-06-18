@@ -71,6 +71,7 @@ void opcontrol(void);
 #endif
 
 #ifdef __cplusplus
+
 /**
  * You can add C++-only headers here
  */

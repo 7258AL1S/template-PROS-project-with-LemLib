@@ -4,7 +4,7 @@ Team 7258A · PROS Kernel 4.2.2 · C++ gnu++26 · ARM Cortex-A9
 
 ## 构建
 
-通过 VS Code 中 **PROS 扩展的 Build 按钮**编译。不要在终端手动运行 make。
+通过 VS Code 中 **PROS 扩展的 Build 按钮**编译。不要在终端手动运行 make。若 PROS 扩展不可用、Build 按钮失败或构建环境损坏，停止并报告环境错误；不要尝试手动 `make` 或 `pros conduct fetch` 作为回退方案。
 
 输出产物：
 - `bin/cold.package.bin` — 冷固件（用户代码）
@@ -54,7 +54,7 @@ Angle angle = 90_stDeg;        // 标准度（模360）
 AngularVelocity vel = 360_rpm; // 转速
 Time timeout = 500_msec;       // 毫秒
 ```
-所有 LemLib API 使用此单位系统，不要混用裸 `double`。
+在本项目中，只有传给 LemLib 运动/里程计/PID 函数的参数，以及所有 `units::Length / Angle / AngularVelocity / Time` 类型变量，必须使用单位类型；普通 if 条件、数组下标、枚举值和非 LemLib 辅助函数的数值可以保持为原生整数或浮点。若某个值要传给 LemLib，请先转换为对应的 `units::` 类型。
 
 ### 命名空间别名（已预定义）
 ```cpp
@@ -64,7 +64,7 @@ namespace mh = lemlib::motion_handler;
 
 ### 硬件对象统一定义在 `sensor.cpp`
 
-所有直接操作端口的硬件对象（电机、IMU、编码器、Rotation Sensor 等）**必须**在 [`src/sensor.cpp`](src/sensor.cpp) 中定义，在 [`include/sensor.h`](include/sensor.h) 中 `extern` 声明。
+所有需要直接访问 VEX 端口的全局对象（pros::Motor、pros::Imu、pros::Rotation、pros::ADIEncoder、lemlib::V5InertialSensor 等）必须只在 src/sensor.cpp 中定义；其他 .cpp 文件只能通过 #include "sensor.h" 访问这些对象，禁止在任何其他 .cpp 中声明或定义它们。
 
 ```cpp
 // sensor.h — 声明
@@ -81,16 +81,84 @@ lemlib::V5InertialSensor imu(15);
 - 避免**静态初始化顺序问题**（跨编译单元的全局对象构造顺序未定义）
 - 统一管理所有端口，易于接线变更
 
+若实际机器人接线或端口映射与当前代码不同，停止并索要验证过的端口映射表，不要猜测端口号或传感器类型。
+
 ### 优化级别
 `-Os`（体积优化），ARM Cortex-A9 + NEON FPU + hard float ABI。
 
-## ⚠️ 关键陷阱
+## ⚠️ 必须遵守的规则
 
-1. **禁止阻塞循环** — `autonomous()` 和 `opcontrol()` 中的函数会被主循环反复调用。在 motorcontrol 相关代码中绝对不要使用 `while`/`for` 阻塞循环。使用非阻塞状态机 + `static` 变量 + timer。
-2. **不要混用裸数值与单位** — LemLib API 全部使用 units 系统。传入裸 `double` 会导致编译错误。
-3. **电机端口语法** — 负号在花括号内：`{1, -2, 3}`，不是 `{-1, 2, -3}`（虽然效果等价，但惯例是正号端口在左、负号在右时用负号标记反转）。
-4. **PROS 内核版本固定** — 内核 4.2.2，不要升级 `api.h` / `main.h`，它们会被内核升级覆盖。
+按优先级排列：
 
+1. **构建方式** — 通过 VS Code 中 PROS 扩展的 Build 按钮编译。不要在终端手动运行 make。若 PROS 扩展不可用、Build 按钮失败或构建环境损坏，停止并报告环境错误；不要尝试手动 `make` 或 `pros conduct fetch` 作为回退方案。
+
+2. **禁止阻塞循环** — `autonomous()` 和 `opcontrol()` 中的函数会被主循环反复调用。在 motorcontrol 相关代码中绝对不要使用 `while`/`for` 阻塞循环。使用非阻塞状态机 + `static` 变量 + timer。
+
+3. **硬件对象统一定义在 `sensor.cpp`** — 所有需要直接访问 VEX 端口的全局对象（pros::Motor、pros::Imu、pros::Rotation、pros::ADIEncoder、lemlib::V5InertialSensor 等）必须只在 src/sensor.cpp 中定义；其他 .cpp 文件只能通过 #include "sensor.h" 访问这些对象，禁止在任何其他 .cpp 中声明或定义它们。若实际机器人接线或端口映射与当前代码不同，停止并索要验证过的端口映射表，不要猜测端口号或传感器类型。
+
+4. **使用单位系统** — 在本项目中，只有传给 LemLib 运动/里程计/PID 函数的参数，以及所有 `units::Length / Angle / AngularVelocity / Time` 类型变量，必须使用单位类型；普通 if 条件、数组下标、枚举值和非 LemLib 辅助函数的数值可以保持为原生整数或浮点。若某个值要传给 LemLib，请先转换为对应的 `units::` 类型。
+
+5. **端口约束** — SmartPort 端口号不能为 0；`lemlib::SmartPort` 是 `consteval` 编译期求值，只接受 1-21 的有效端口。占位符也必须用有效值，标注 TODO 即可。电机端口负号在花括号内：`{1, -2, 3}`。
+
+### 其他重要约束
+
+6. **PROS 内核版本固定** — 内核 4.2.2，不要升级 `api.h` / `main.h`，它们会被内核升级覆盖。
+
+7. **全局作用域 lambda 不能使用捕获默认** — `[&]` / `[=]` 在文件作用域不合法，改用显式捕获或（对 `static` 变量）空捕获直接访问。
+
+8. **`static` 存储期变量不能被 lambda 捕获** — 静态变量直接访问即可，无需写在 `[]` 里。
+
+9. **LemLib 里程计对象必须延迟初始化** — `TrackingWheel` 构造时会调用 `encoder->getAngle()`，所以编码器必须先于 TrackingWheel 构造。将 TrackingWheel/Odom 放在 `lemLibInit()` 函数内用 `static` 局部变量延迟构造，由 `initialize()` 调用，可避免跨编译单元的静态初始化顺序问题。
+
+10. **PROS CLI 与 Python 3.14 不兼容** — `pkg_resources` 已在 Python 3.14 中移除。`pros conduct fetch` 等 CLI 命令不可用。通过 VS Code 中 PROS 扩展的 Build 按钮编译。
+
+## 附录：设计模式
+
+### 脉冲时序控制（爪子）
+```cpp
+// 按钮上升沿触发 → 全功率运行 N ms → 切换到低功率保持或刹车
+void Claw_control_time(int BtnPressed) {
+    static uint32_t pulseStart = 0;
+    static bool lastBtn = false;
+    static bool closed  = false;
+
+    if (!lastBtn && BtnPressed) { closed = !closed; pulseStart = pros::millis(); }
+    lastBtn = BtnPressed;
+
+    if (pros::millis() - pulseStart < kPulseMs) {
+        Claw.move(closed ? kFull : -kFull);
+    } else {
+        Claw.move(closed ? kHold : 0);  // 或 HOLD 刹车
+    }
+}
+```
+单按钮切换夹紧/松开，全功率脉冲避免持续堵转烧电机。
+
+### 六段式 PID（升降机构）
+上升/下降各 3 段，通过 `distFromBottom` 分段切换 PID 参数。上升段和下降段各自独立积分，清零对侧积分防止 windup 跨越。
+
+### 摇杆死区 + 刹车（底盘）
+```cpp
+if (fabs(dir) < kDeadzone && fabs(turn) < kDeadzone) {
+    motors.brake();  // 死区内刹车
+} else {
+    motors.move(dir + turn);  // Arcade drive
+}
+```
+
+## 附录：Git 工作流
+
+| 远程 | URL | 用途 |
+|------|-----|------|
+| `origin` | `7258AL1S/template-PROS-project-with-LemLib` | 发布 |
+| `upstream` | `shaonianhuge/template-PROS-project-with-LemLib` | 模板同步 |
+
+同步上游：
+```bash
+git fetch upstream dev
+git reset --hard upstream/dev
+git push -f origin main
+```
 ## 依赖库
 
 | 库 | 位置 | 用途 |

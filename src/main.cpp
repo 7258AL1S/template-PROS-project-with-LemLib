@@ -3,7 +3,7 @@
 #include "sensor.h"
 #include "api.h"
 #include "lemlib/lemlib.hpp"
-
+#include "auto.h"
 
 /**
  * @brief LLEMU 中央按钮的回调函数
@@ -48,6 +48,9 @@ void disabled() {}
  */
 void competition_initialize() {}
 
+
+
+int auton = 1;// 选择自动程序（1、2、3...）
 /**
  * 运行用户自动代码。此函数在独立 task 中以默认优先级和栈大小启动，
  * 每当机器人通过 FMS 或 VEX 竞赛开关在自动模式下被启用时调用。
@@ -57,10 +60,13 @@ void competition_initialize() {}
  * 重新启用将重启 task，而非从中断处恢复。
  */
 void autonomous() {
-	// 向前移动 10 英寸，超时 5 秒
-	lemlib::MoveToPointParams params;
-	lemlib::MoveToPointSettings settings;
-	lemlib::moveToPoint({10_in, 0_in}, 5000_msec, params, settings);
+	switch (auton) {
+		case 1:
+			auto1();
+			break;
+		default:
+			break;
+	}
 }
 
 /**
@@ -95,7 +101,7 @@ void opcontrol() {
 
 		// Claw 夹爪控制
 		int BtnPressed = master.get_digital(DIGITAL_L1);  // L1 按下→夹紧，再按→松开（toggle）
-		Claw_control(BtnPressed);  // L1 按下→夹紧，松开→放松
+		Claw_control_time(BtnPressed);  // L1 按下→夹紧，松开→放松
 
 		pros::delay(20);                               // 等待 20ms 后进入下一帧
 	}

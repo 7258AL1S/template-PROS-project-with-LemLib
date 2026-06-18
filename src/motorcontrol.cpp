@@ -18,7 +18,7 @@ static const LiftPID LIFT_DOWN_3 = {1.5f, 0.0f, 26.0f};  // 下降·底段：接
 // ============================================================
 // Lift() — 升降机构控制（六段式 PID）
 // ============================================================
-float Lift(int joystickValue) {
+float Lift_pid(int joystickValue) {
 	static float lift_target  = 0;        // 目标角度
 	static bool  target_init  = false;    // 首次初始化标志
 	static float last_err[6]  = {0};      // 六段各自的 lastError
@@ -139,13 +139,9 @@ void Lift_simple(int joystickValue) {
 	// 读取当前升降角度（PROS Rotation 返回厘度，÷100 转度）
 	float currentAngle = liftRotation.get_angle() / 100.0f;
 
-	// 接近顶部 267° ± 5°：减速防撞顶
-	if (currentAngle >= 263.0f && currentAngle <= 269.0f) {
-		joystickValue = static_cast<int>(joystickValue * 0.4f);
-	}
-	// 接近底部 0° ± 8°（含 359→0 环绕）：减速防撞底
-	if (currentAngle >= 352.0f || currentAngle <= 8.0f) {
-		joystickValue = static_cast<int>(joystickValue * 0.6f);
+	// 仅下降时接近底部 ±8°（含 359→0 环绕）：减速防撞底
+	if (joystickValue < 0 && (currentAngle >= 346.0f || currentAngle <= 8.0f)) {
+		joystickValue = static_cast<int>(joystickValue * 0.3f);
 	}
 
 	// ============================================================
@@ -154,7 +150,7 @@ void Lift_simple(int joystickValue) {
 	static float     rampTargetPower = 0;       // 缓降起点功率
 	static uint32_t  rampStartTime   = 0;       // 缓降开始时间戳
 	static bool      ramping          = false;   // 是否正在缓降
-	constexpr uint32_t kRampMs = 150;            // 缓降时长（毫秒）
+	constexpr uint32_t kRampMs = 300;            // 缓降时长（毫秒）
 
 	if (joystickValue > 25 || joystickValue < -25) {
 		// ———— 摇杆活动区：正常驱动 ————
@@ -174,10 +170,16 @@ void Lift_simple(int joystickValue) {
 		uint32_t elapsed = pros::millis() - rampStartTime;
 		if (elapsed < kRampMs) {
 			// 线性缓降：rampTargetPower → 0
+			/*
 			float t = static_cast<float>(elapsed) / kRampMs;
 			float power = rampTargetPower * (1.0f - t);
 			lift1.move(power);
 			lift2.move(power);
+			*/
+			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift1.brake();
+			lift2.brake();
 		} else {
 			// 缓降完成 → HOLD 锁死
 			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
@@ -187,6 +189,91 @@ void Lift_simple(int joystickValue) {
 		}
 	}
 }
+
+
+void Lift(float Power){
+	if(Power == 0){
+		lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+		lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+		lift1.brake();
+		lift2.brake();
+	}
+	else{
+		lift1.move(Power);
+		lift2.move(Power);
+	}
+}
+
+
+//Lift Autonomous
+
+// ⚠️ 含阻塞循环，仅在 autonomous() 中使用；opcontrol() 请用 Lift_pid()
+// 恒功率升降定位：指定功率朝着 Target 运行，±1° 到位或超时停止
+void LiftUpDegree(float Power, float Target, float Fulltime) {
+	// 机械零位偏移：传感器物理零位与逻辑零位差 20° Todo：测定实际偏移并调整
+	constexpr float kOffset = 20.0f;
+	Target += kOffset;
+
+	// 当前角度（度），模 360 回绕到 [0, 360)
+	float cur = std::fmod(liftRotation.get_angle() / 100.0f + kOffset, 360.0f);
+	if (cur < 0.0f) cur += 360.0f;
+
+	// 方向锁定：仅在循环前判定一次（若中途方向反转不会修正）
+	bool isUp = (Target - cur) > 0.0f;
+
+	// 超时计时起点
+	uint32_t start = pros::millis();
+
+	while (pros::millis() - start < static_cast<uint32_t>(Fulltime)) {
+		pros::delay(10);  // 10ms 控制周期
+
+		// 刷新当前角度
+		cur = std::fmod(liftRotation.get_angle() / 100.0f + kOffset, 360.0f);
+		if (cur < 0.0f) cur += 360.0f;
+
+		float err = Target - cur;
+
+		// ±1° 死区：进入即到位
+		if (isUp) {
+			if (err < 1.0f) break;    // 上升：越过目标
+		} else {
+			if (err > -1.0f) break;   // 下降：越过目标
+		}
+
+		Lift(Power);  // 恒功率驱动（无减速斜坡）
+	}
+
+	Lift(0);  // 到位或超时 → 刹车停止
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -222,9 +309,9 @@ void Claw_control(int BtnPressed) {
 	}
 	prevBtn = BtnPressed;
 
-	constexpr int     kPower       = 60;    // 基础功率
-	constexpr double  kStallThresh = 0.5;   // 堵转速度阈值（deg/ms）
-	constexpr uint32_t kStallTime  = 200;   // 持续堵转触发时间（ms）
+	constexpr int     kPower       = 100;    // 基础功率
+	constexpr double  kStallThresh = 0.4;   // 堵转速度阈值（deg/ms）
+	constexpr uint32_t kStallTime  = 350;   // 持续堵转触发时间（ms）
 
 	const double   currentPos = Claw.get_position();// 当前编码器位置（度）
 	const uint32_t dt         = now - lastTime;
@@ -237,8 +324,9 @@ void Claw_control(int BtnPressed) {
 		openStalled = false;
 
 		if (clampStalled) {
-			Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-			Claw.brake();
+			//Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			//Claw.brake();
+			Claw.move(0.5 * kPower);
 		} else {
 			Claw.move(kPower);
 
@@ -270,6 +358,72 @@ void Claw_control(int BtnPressed) {
 }
 
 
+// ============================================================
+// 爪子定时控制（单键 L1 切换夹紧/松开）
+// 夹紧：全功率 200ms → 低功率保持
+// 松开：全功率 200ms → HOLD 刹车
+// ============================================================
+constexpr uint32_t kPulseMs = 259;  // 全功率时长
+constexpr int      kFull    = 100;  // 全功率
+constexpr int      kHold    = 20;   // 保持功率
+void Claw_control_time(int BtnPressed) {
+	static uint32_t pulseStart = 0;     // 脉冲起始时间
+	static bool     lastBtn     = false; // 上次按钮状态
+	static bool     closed      = false; // 当前：夹紧/松开
+	static bool     holdd      = true;  // 是否保持夹紧（松开后不保持）
+	
+
+	// 上升沿：切换夹紧/松开
+	if (!lastBtn && BtnPressed) {
+		closed = !closed;
+		 pulseStart = pros::millis();
+		 }
+	lastBtn = BtnPressed;
+
+	uint32_t elapsed = pros::millis() - pulseStart;
+
+	if (elapsed < kPulseMs) {
+		// 全功率脉冲阶段
+		Claw.move(closed ? kFull : -kFull);
+	} else {
+		// 脉冲结束
+		if (!closed && holdd) Claw.move(-kHold);
+		else {
+			Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			Claw.brake(); 
+		}
+	}
+
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.brake();
+}
+
+
+
+
+
+void ClawOpen(){
+	Claw.move(kFull);
+	pros::delay(kPulseMs);
+	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw.brake();
+}
+
+void ClawClose(){
+	Claw.move(-kFull);
+	pros::delay(kPulseMs);
+	Claw.move(-kHold);
+}
+
+
+
+
+
+
+
+
+
+
 
 
 const int kDeadzone = 10; // 摇杆死区阈值
@@ -278,7 +432,7 @@ void drive(int dir,int turn){
 	left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	
-	if(fabs(dir) < kDeadzone || fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
+	if(fabs(dir) < kDeadzone && fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
 		left_mg.brake();
 		right_mg.brake();
 	} else {

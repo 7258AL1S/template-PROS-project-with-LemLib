@@ -10,29 +10,29 @@
 // ============================================================
 
 // PID 控制器
-const lemlib::PID angular_pid(2.0, 0.0, 10.0);    // 转向 PID
-const lemlib::PID lateral_pid(5.0, 0.0, 15.0);    // 横向 PID
+const lemlib::PID angular_pid(1.5, 0.0, 3.0);    // 转向 PID
+const lemlib::PID lateral_pid(4.6, 0.0, 0.0);    // 横向 PID
 
 // 底盘电机组（端口与 sensor.cpp 保持一致）
 // 左侧：正转端口 -10, 9；反转端口 -8
 lemlib::MotorGroup left_motors({-10, 9, -8}, 360_rpm);
 // 右侧：正转端口 1；反转端口 -2, 3
-lemlib::MotorGroup right_motors({1, -2, -3}, 360_rpm);
+lemlib::MotorGroup right_motors({1, -2, 3}, 360_rpm);
 
 // ============================================================
 // 定位轮参数
 // ============================================================
 
 // --- 垂直定位轮（测量前后移动）---
-static const Length verticalWheelDiameter = 2.75_in;
+static const Length verticalWheelDiameter = 2_in;
 // 偏置：正 = 中心前方，负 = 中心后方
-static const Length verticalWheelOffset = 0.0_in;
+static const Length verticalWheelOffset = -1.732_in;//4,4
 static const Number verticalGearRatio = 1.0;
 
 // --- 水平定位轮（测量左右移动）---
-static const Length horizontalWheelDiameter = 2.75_in;
+static const Length horizontalWheelDiameter = 2_in;
 // 偏置：正 = 中心左侧，负 = 中心右侧
-static const Length horizontalWheelOffset = -3.0_in;
+static const Length horizontalWheelOffset = -2.24_in;
 static const Number horizontalGearRatio = 1.0;
 
 // ============================================================
@@ -50,10 +50,10 @@ const lemlib::ExitConditionGroup<Length> lateral_exit_conditions(
     std::vector{lemlib::ExitCondition<Length>(0.5_in, 250_msec)});
 
 // 底盘参数
-const Length track_width = 12.0_in;
-const Number drift_compensation = 0;
-const Number angular_slew = 0;
-const Number lateral_slew = 0;
+const Length track_width = 15.43_in;// 轮距（左右轮中心间距）
+const Number drift_compensation = 0;// 漂移补偿系数（0~1，0 = 无补偿，1 = 完全补偿）
+const Number angular_slew = 0;// 横向速度斜坡
+const Number lateral_slew = 0;// 角速度斜坡
 
 // ============================================================
 // LemLib 初始化（在 initialize() 中调用）
@@ -83,4 +83,10 @@ void lemLibInit() {
 
     // 启动追踪任务，每 10ms 更新
     odom->startTask(10_msec);
+
+    // 陀螺仪朝向归零
+    pros::delay(50);
+    odom->setPose({0_in, 0_in, 0_stDeg});
+
+ 
 }
