@@ -6,7 +6,7 @@ void auto1() {
     lemlib::MoveToPointParams params;
     lemlib::MoveToPointSettings settings;
 
-    lemlib::moveToPoint({23.2_in, 10.3_in}, 1000_msec, params, settings);
-    LiftUpDegree(-40, 340, 300);
+    lemlib::moveToPoint({23.2_in, 10.3_in}, 2590_msec, params, settings);
+    LiftUpDegree(-50, 340, 500);
     ClawClose();
 }
