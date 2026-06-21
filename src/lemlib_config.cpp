@@ -10,8 +10,8 @@
 // ============================================================
 
 // PID 控制器
-const lemlib::PID angular_pid(0.9, 0.0, 3.0);    // 转向 PID
-const lemlib::PID lateral_pid(4.6, 0.0, 0.0);    // 横向 PID
+const lemlib::PID angular_pid(1.0, 0.0, 3.0);    // 转向 PID
+const lemlib::PID lateral_pid(5.0, 0.0, 0.0);    // 横向 PID
 
 // 底盘电机组（端口与 sensor.cpp 保持一致）
 // 左侧：正转端口 -10, 9；反转端口 -8

@@ -357,31 +357,20 @@ void Claw_control(int BtnPressed) {
 	}
 }
 
+	constexpr uint32_t kPulseMs = 250;  // 全功率时长
+	constexpr int      kFull    = 100;  // 全功率
+	constexpr int      kHold    = 20;   // 保持功率
 
 // ============================================================
 // 爪子定时控制（单键 L1 切换夹紧/松开）
 // 夹紧：全功率 200ms → 低功率保持
 // 松开：全功率 200ms → HOLD 刹车
 // ============================================================
-<<<<<<< HEAD
-constexpr uint32_t kPulseMs = 259;  // 全功率时长
-constexpr int      kFull    = 100;  // 全功率
-constexpr int      kHold    = 20;   // 保持功率
-=======
->>>>>>> a4e4232afc9e5402e61616348de9a65df263e3ca
 void Claw_control_time(int BtnPressed) {
 	static uint32_t pulseStart = 0;     // 脉冲起始时间
 	static bool     lastBtn     = false; // 上次按钮状态
 	static bool     closed      = false; // 当前：夹紧/松开
-<<<<<<< HEAD
-	static bool     holdd      = true;  // 是否保持夹紧（松开后不保持）
-	
-=======
 	static bool     holdd      = false;
-	constexpr uint32_t kPulseMs = 200;  // 全功率时长
-	constexpr int      kFull    = 100;  // 全功率
-	constexpr int      kHold    = 20;   // 保持功率
->>>>>>> a4e4232afc9e5402e61616348de9a65df263e3ca
 
 	// 上升沿：切换夹紧/松开
 	if (!lastBtn && BtnPressed) {
@@ -403,27 +392,26 @@ void Claw_control_time(int BtnPressed) {
 			Claw.brake(); 
 		}
 	}
-
+	
 	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	Claw_Rot.brake();
 }
 
 
-<<<<<<< HEAD
 
 
 
 void ClawOpen(){
-	Claw.move(kFull);
+	Claw.move(-kFull);
 	pros::delay(kPulseMs);
 	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	Claw.brake();
 }
 
 void ClawClose(){
-	Claw.move(-kFull);
+	Claw.move(kFull);
 	pros::delay(kPulseMs);
-	Claw.move(-kHold);
+	Claw.move(kHold);
 }
 
 
@@ -435,8 +423,6 @@ void ClawClose(){
 
 
 
-=======
->>>>>>> a4e4232afc9e5402e61616348de9a65df263e3ca
 
 
 const int kDeadzone = 10; // 摇杆死区阈值
