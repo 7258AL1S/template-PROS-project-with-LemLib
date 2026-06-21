@@ -192,13 +192,32 @@ void Lift_simple(int joystickValue) {
 
 
 void Lift(float Power){
+	static uint32_t zeroStartTime = 0;
+	static bool     wasPowered    = false;
+
 	if(Power == 0){
-		lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-		lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-		lift1.brake();
-		lift2.brake();
+		if (wasPowered) {
+			zeroStartTime = pros::millis();
+			wasPowered = false;
+		}
+
+		uint32_t elapsed = pros::millis() - zeroStartTime;
+		if (elapsed < 150) {
+			// 前 150ms：BRAKE 模式（电阻制动，快速减速）
+			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift1.brake();
+			lift2.brake();
+		} else {
+			// 150ms 后：HOLD 模式（主动锁死位置）
+			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			lift1.brake();
+			lift2.brake();
+		}
 	}
 	else{
+		wasPowered = true;
 		lift1.move(Power);
 		lift2.move(Power);
 	}
@@ -363,7 +382,7 @@ void Claw_control(int BtnPressed) {
 // 夹紧：全功率 200ms → 低功率保持
 // 松开：全功率 200ms → HOLD 刹车
 // ============================================================
-constexpr uint32_t kPulseMs = 259;  // 全功率时长
+constexpr uint32_t kPulseMs = 270;  // 全功率时长
 constexpr int      kFull    = 100;  // 全功率
 constexpr int      kHold    = 20;   // 保持功率
 void Claw_control_time(int BtnPressed) {
@@ -403,16 +422,16 @@ void Claw_control_time(int BtnPressed) {
 
 
 void ClawOpen(){
-	Claw.move(kFull);
+	Claw.move(-kFull);
 	pros::delay(kPulseMs);
 	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	Claw.brake();
 }
 
 void ClawClose(){
-	Claw.move(-kFull);
+	Claw.move(kFull);
 	pros::delay(kPulseMs);
-	Claw.move(-kHold);
+	Claw.move(kHold);
 }
 
 

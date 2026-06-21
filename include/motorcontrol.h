@@ -78,6 +78,21 @@ void Claw_control(int BtnPressed);
 void Claw_control_time(int BtnPressed);
 
 /**
+ * @brief 底盘电机控制（Arcade Drive）
+ * @param dir  前进/后退量 [-127, 127]
+ * @param turn 左转/右转量 [-127, 127]
+ */
+void drive(int dir, int turn);
+
+
+/**
+ * @brief 爪子控制(时间控制)
+ * @param BtnPressed 按键按下状态
+ */
+void Claw_control_time(int BtnPressed);
+
+
+/**
  * @brief 爪子开闭控制（单次全功率 + 保持）
  * ClawOpen() → 全功率打开 200ms → HOLD 刹车
  * ClawClose() → 全功率关闭 200ms → 低功率保持

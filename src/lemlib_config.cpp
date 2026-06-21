@@ -10,8 +10,8 @@
 // ============================================================
 
 // PID 控制器
-const lemlib::PID angular_pid(1.5, 0.0, 3.0);    // 转向 PID
-const lemlib::PID lateral_pid(4.6, 0.0, 0.0);    // 横向 PID
+const lemlib::PID angular_pid(1.1, 0.0, 0.06);    // 转向 PID
+const lemlib::PID lateral_pid(4.8, 0.0, 0.26);    // 横向 PID
 
 // 底盘电机组（端口与 sensor.cpp 保持一致）
 // 左侧：正转端口 -10, 9；反转端口 -8
@@ -67,10 +67,14 @@ void lemLibInit() {
         pros::delay(10);
     }
 
-    // 构建追踪轮（使用 sensor.cpp 中的编码器对象）
-    static lemlib::TrackingWheel verticalWheel(&verticalEncoder, verticalWheelDiameter,
+    // 底盘刹车模式 HOLD（主动保持位置，到位即停）
+    left_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
+    right_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
+
+    // 构建追踪轮（编码器与物理轮交叉对应：verticalEncoder 测横向，horizontalEncoder 测纵向）
+    static lemlib::TrackingWheel verticalWheel(&horizontalEncoder, verticalWheelDiameter,
                                                verticalWheelOffset, verticalGearRatio);
-    static lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, horizontalWheelDiameter,
+    static lemlib::TrackingWheel horizontalWheel(&verticalEncoder, horizontalWheelDiameter,
                                                  horizontalWheelOffset, horizontalGearRatio);
 
     // 构建里程计实例
