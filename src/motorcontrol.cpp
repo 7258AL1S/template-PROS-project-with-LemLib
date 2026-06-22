@@ -413,8 +413,7 @@ void Claw_control_time(int BtnPressed) {
 		}
 	}
 
-	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	Claw_Rot.brake();
+
 }
 
 
@@ -437,6 +436,73 @@ void ClawClose(){
 
 
 
+
+
+void Claw_Turn(int btn){
+	static bool     toggled   = false;
+	static int      prevBtn   = 0;
+	static bool     fwdStalled = false;  // 正转堵转
+	static bool     revStalled = false;  // 反转堵转
+	static double   lastPos   = 0;
+	static uint32_t lastCheck = 0;
+
+	// 上升沿切换
+	if (prevBtn == 0 && btn == 1) {
+		toggled = !toggled;
+		fwdStalled = false;
+		revStalled = false;
+	}
+	prevBtn = btn;
+
+	uint32_t now = pros::millis();
+	double curPos = Claw_Rot.get_position();
+
+	// 每 200ms 检测一次编码器变化
+	if (now - lastCheck >= 200) {
+		if (std::fabs(curPos - lastPos) < 5.0) {
+			if (toggled)  fwdStalled = true;
+			else          revStalled = true;
+		}
+		lastPos   = curPos;
+		lastCheck = now;
+	}
+
+	if (toggled) {
+		if (fwdStalled) { Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); Claw_Rot.brake(); }
+		else            { Claw_Rot.move(80); }
+	} else {
+		if (revStalled) { Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); Claw_Rot.brake(); }
+		else            { Claw_Rot.move(-80); }
+	}
+}
+
+// 夹爪旋转至 90°（正转，堵转即停+HOLD）
+void Claw_Turn90() {
+	double lastPos = Claw_Rot.get_position();
+	Claw_Rot.move(80);
+	while (true) {
+		pros::delay(200);
+		double curPos = Claw_Rot.get_position();
+		if (std::fabs(curPos - lastPos) < 5.0) break;
+		lastPos = curPos;
+	}
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.brake();
+}
+
+// 夹爪旋转至 0°（反转，堵转即停+HOLD）
+void Claw_Turn0() {
+	double lastPos = Claw_Rot.get_position();
+	Claw_Rot.move(-80);
+	while (true) {
+		pros::delay(200);
+		double curPos = Claw_Rot.get_position();
+		if (std::fabs(curPos - lastPos) < 5.0) break;
+		lastPos = curPos;
+	}
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.brake();
+}
 
 
 

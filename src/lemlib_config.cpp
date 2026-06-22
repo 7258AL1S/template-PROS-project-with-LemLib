@@ -11,7 +11,7 @@
 
 // PID 控制器
 const lemlib::PID angular_pid(1.1, 0.0, 0.06);    // 转向 PID
-const lemlib::PID lateral_pid(4.8, 0.0, 0.26);    // 横向 PID
+const lemlib::PID lateral_pid(4.6, 0.0, 0.27);    // 横向 PID
 
 // 底盘电机组（端口与 sensor.cpp 保持一致）
 // 左侧：正转端口 -10, 9；反转端口 -8
@@ -26,13 +26,13 @@ lemlib::MotorGroup right_motors({1, -2, 3}, 360_rpm);
 // --- 垂直定位轮（测量前后移动）---
 static const Length verticalWheelDiameter = 2_in;
 // 偏置：正 = 中心前方，负 = 中心后方
-static const Length verticalWheelOffset = -1.732_in;//4,4
+static const Length verticalWheelOffset = -0.315_in;//4,4
 static const Number verticalGearRatio = 1.0;
 
 // --- 水平定位轮（测量左右移动）---
 static const Length horizontalWheelDiameter = 2_in;
 // 偏置：正 = 中心左侧，负 = 中心右侧
-static const Length horizontalWheelOffset = -2.24_in;
+static const Length horizontalWheelOffset = -3.386_in;
 static const Number horizontalGearRatio = 1.0;
 
 // ============================================================
