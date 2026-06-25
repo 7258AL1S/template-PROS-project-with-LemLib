@@ -30,7 +30,8 @@ void initialize() {
 	pros::lcd::set_text(1, "AL-1S");
 
 	pros::lcd::register_btn1_cb(on_center_button);
-
+	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
+	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 	lemLibInit(); // 初始化 LemLib（IMU 校准 + 里程计启动）
 }
 
@@ -105,6 +106,18 @@ void opcontrol() {
 		//转夹子
 		int BtnClawTurn = master.get_digital(DIGITAL_B);  // 
 		Claw_Turn(BtnClawTurn);  // 
+
+
+		//气动控制
+		int BtnTuggle = master.get_digital(DIGITAL_X);  // R1 按下→切换气缸状态
+		if(BtnTuggle) Piston_tuggle.set_value(true);
+		else Piston_tuggle.set_value(false);
+
+
+
+
+
+
 		pros::delay(20);                               // 等待 20ms 后进入下一帧
 	}
 }

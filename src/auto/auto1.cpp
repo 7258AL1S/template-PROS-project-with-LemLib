@@ -38,59 +38,61 @@ void autoSubsystems() {
 void auto1() {
     // 启动子系统后台任务（升降 + 夹爪旋转与底盘并行）
     pros::Task subTask(autoSubsystems);
-    //ClawUP = false;   // 预设夹爪状态
-    //clawGo = true;   // 触发夹爪旋转
-    Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);// 旋转电机保持当前位置不动
+
+    // 启动里程计实时调试任务
+    pros::Task debugTask([] {
+        while (true) {
+            auto pose = pose_getter();
+            pros::lcd::print(3, "X: %.1f in", to_in(pose.x));
+            pros::lcd::print(4, "Y: %.1f in", to_in(pose.y));
+            pros::lcd::print(5, "H: %.0f deg", to_stDeg(pose.orientation));
+            pros::delay(100);
+        }
+    });
+
+    Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     Claw_Rot.brake();
+
     // === 运动参数 ===
     lemlib::MoveToPoseParams Poseparams;
     lemlib::MoveToPoseSettings Posesettings;
 
     lemlib::MoveToPointParams params;
-            // 倒车
-    params.maxAngularSpeed = 0;      // 禁用转向
+    params.maxAngularSpeed = 0;
     lemlib::MoveToPointSettings settings;
 
+    lemlib::TurnToParams turnParams;
+    lemlib::TurnToSettings turnSettings;
 
-lemlib::TurnToParams turnParams;
-lemlib::TurnToSettings turnSettings;
     ClawClose();
-    params.reversed = true;  
-    lemlib::moveToPoint({-12.5_in, 0_in}, 1300_msec, params, settings);
+    params.reversed = true;
+    lemlib::moveToPoint({-12.7_in, 0_in}, 1000_msec, params, settings);
 
     liftCmd = {60, 340, 500};
-    liftGo = true;  // 触发升降
-
-    lemlib::turnTo(90_stDeg, 1400_msec, turnParams, turnSettings);
+    liftGo = true;
+    lemlib::turnTo(90_stDeg, 900_msec, turnParams, turnSettings);
     
-    ClawUP = true;   
-    clawGo = true;   // 触发夹爪旋转
+    ClawUP = true;
+    clawGo = true;
 
-    params.reversed = false;   
-    lemlib::moveToPoint({-12.5_in,3.7_in},1000_msec,params,settings);
+    params.reversed = false;
+    lemlib::moveToPoint({-12.7_in, 11.5_in}, 1000_msec, params, settings);
 
-    // === 自定义退出条件（倒车里程计可容忍更大误差）===
-    //liftCmd = {-40, 352, 800};
-    //liftGo = true;  // 触发升降
-    LiftUpDegree(-30, 357, 400);
-    pros::delay(150);
+    LiftUpDegree(-33, 352, 500);
+    pros::delay(200);
     ClawOpen();
-    
-    params.reversed = true;   
-    lemlib::moveToPoint({-12.5_in,3_in},1000_msec,params,settings);
-    //LiftUpDegree(-60, 300, 700);
-    //lemlib::turnTo(-90_stDeg, 2000_msec, turnParams, turnSettings);
-    // 倒车 14.2 英寸，超时 2 秒
-    
+    pros::delay(200);
 
-    // === 调试：打印里程计坐标 ===
-    auto pose = pose_getter();
-    pros::lcd::print(3, "X: %.1f in", to_in(pose.x));
-    pros::lcd::print(4, "Y: %.1f in", to_in(pose.y));
-    pros::lcd::print(5, "H: %.0f deg", to_stDeg(pose.orientation));
-    pros::delay(2000);  // 保持屏幕 2 秒便于读数
+    params.reversed = true;
+    lemlib::moveToPoint({-12.7_in, -2_in}, 1000_msec, params, settings);
+    liftCmd = {-33, 360, 500};
+    liftGo = true;
+    turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.05);
+    lemlib::turnTo(135_stDeg, 1000_msec, turnParams, turnSettings);
+    params.reversed = false;
+    //lemlib::moveToPose({-25.7_in, 13_in, 135_stDeg}, 2000_msec, Poseparams, Posesettings);
+    lemlib::moveToPoint({-28.5_in, 13.8_in}, 2500_msec, params, settings);
 
-    // LiftUpDegree(-40, 340, 300);
-    // ClawClose();
-    // lemlib::turnTo(-90_stDeg, 2000_msec, {}, {});
+    ClawClose();
+
 }

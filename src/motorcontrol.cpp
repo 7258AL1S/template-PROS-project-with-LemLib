@@ -2,6 +2,11 @@
 #include "motorcontrol.h"
 #include "sensor.h"
 #include <cmath>
+#include "lemlib/config.hpp"
+#include "lemlib/tracking/TrackingWheelOdom.hpp"
+#include "hardware/IMU/V5InertialSensor.hpp"
+#include "hardware/Encoder/V5RotationSensor.hpp"
+
 
 
 
@@ -512,16 +517,16 @@ void Claw_Turn0() {
 
 
 const int kDeadzone = 10; // 摇杆死区阈值
-//底盘电机控制
+const float TurnScale = 1.0; // 转向缩放系数（可调节转向灵敏度，默认1.0）
 void drive(int dir,int turn){
-	left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	
+	turn = turn * TurnScale;
+	float leftPower =  0.008 *(dir + turn);
+	float rightPower = 0.008 *(dir - turn);
 	if(fabs(dir) < kDeadzone && fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
-		left_mg.brake();
-		right_mg.brake();
+		left_motors.brake();
+		right_motors.brake();
 	} else {
-		left_mg.move(dir + turn);      // 设置左电机电压
-		right_mg.move(dir - turn);     // 设置右电机电压
+		left_motors.move(leftPower);      // 设置左电机电压
+		right_motors.move(rightPower);     // 设置右电机电压
 	} 
 }

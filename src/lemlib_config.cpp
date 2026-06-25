@@ -11,13 +11,17 @@
 
 // PID 控制器
 const lemlib::PID angular_pid(1.1, 0.0, 0.06);    // 转向 PID
-const lemlib::PID lateral_pid(4.6, 0.0, 0.27);    // 横向 PID
+const lemlib::PID lateral_pid(4.3, 0.0, 0.29);    // 横向 PID
+
+
+//=============================================================
+//已经在sensor.cpp定义过motors，故不需要在lemlib_config.cpp中定义
 
 // 底盘电机组（端口与 sensor.cpp 保持一致）
 // 左侧：正转端口 -10, 9；反转端口 -8
-lemlib::MotorGroup left_motors({-10, 9, -8}, 360_rpm);
+//lemlib::MotorGroup left_motors({-10, 9, -8}, 266_rpm);
 // 右侧：正转端口 1；反转端口 -2, 3
-lemlib::MotorGroup right_motors({1, -2, 3}, 360_rpm);
+//lemlib::MotorGroup right_motors({1, -2, 3}, 266_rpm);
 
 // ============================================================
 // 定位轮参数
@@ -26,13 +30,13 @@ lemlib::MotorGroup right_motors({1, -2, 3}, 360_rpm);
 // --- 垂直定位轮（测量前后移动）---
 static const Length verticalWheelDiameter = 2_in;
 // 偏置：正 = 中心前方，负 = 中心后方
-static const Length verticalWheelOffset = -0.315_in;//4,4
+static const Length verticalWheelOffset = 3.75_in;  // 减小：X小，Y小
 static const Number verticalGearRatio = 1.0;
 
 // --- 水平定位轮（测量左右移动）---
 static const Length horizontalWheelDiameter = 2_in;
-// 偏置：正 = 中心左侧，负 = 中心右侧
-static const Length horizontalWheelOffset = -3.386_in;
+// 偏置：正 = 中心左侧，负 = 中心右侧-12.0 +0.8   -12.2 +0.2
+static const Length horizontalWheelOffset = -1.6_in;//增加：X小，Y大
 static const Number horizontalGearRatio = 1.0;
 
 // ============================================================
@@ -45,7 +49,7 @@ const std::function<units::Pose()> pose_getter = []() { return odom->getPose(); 
 
 // 退出条件
 const lemlib::ExitConditionGroup<AngleRange> angular_exit_conditions(
-    std::vector{lemlib::ExitCondition<AngleRange>(5_stDeg, 250_msec)});
+    std::vector{lemlib::ExitCondition<AngleRange>(2_stDeg, 250_msec)});
 const lemlib::ExitConditionGroup<Length> lateral_exit_conditions(
     std::vector{lemlib::ExitCondition<Length>(0.5_in, 250_msec)});
 
@@ -67,9 +71,6 @@ void lemLibInit() {
         pros::delay(10);
     }
 
-    // 底盘刹车模式 HOLD（主动保持位置，到位即停）
-    left_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
-    right_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
 
     // 构建追踪轮（编码器与物理轮交叉对应：verticalEncoder 测横向，horizontalEncoder 测纵向）
     static lemlib::TrackingWheel verticalWheel(&horizontalEncoder, verticalWheelDiameter,
