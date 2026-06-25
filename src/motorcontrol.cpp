@@ -2,6 +2,11 @@
 #include "motorcontrol.h"
 #include "sensor.h"
 #include <cmath>
+#include "lemlib/config.hpp"
+#include "lemlib/tracking/TrackingWheelOdom.hpp"
+#include "hardware/IMU/V5InertialSensor.hpp"
+#include "hardware/Encoder/V5RotationSensor.hpp"
+
 
 
 
@@ -192,13 +197,32 @@ void Lift_simple(int joystickValue) {
 
 
 void Lift(float Power){
+	static uint32_t zeroStartTime = 0;
+	static bool     wasPowered    = false;
+
 	if(Power == 0){
-		lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-		lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-		lift1.brake();
-		lift2.brake();
+		if (wasPowered) {
+			zeroStartTime = pros::millis();
+			wasPowered = false;
+		}
+
+		uint32_t elapsed = pros::millis() - zeroStartTime;
+		if (elapsed < 150) {
+			// 前 150ms：BRAKE 模式（电阻制动，快速减速）
+			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+			lift1.brake();
+			lift2.brake();
+		} else {
+			// 150ms 后：HOLD 模式（主动锁死位置）
+			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			lift1.brake();
+			lift2.brake();
+		}
 	}
 	else{
+		wasPowered = true;
 		lift1.move(Power);
 		lift2.move(Power);
 	}
@@ -366,6 +390,9 @@ void Claw_control(int BtnPressed) {
 // 夹紧：全功率 200ms → 低功率保持
 // 松开：全功率 200ms → HOLD 刹车
 // ============================================================
+constexpr uint32_t kPulseMs = 270;  // 全功率时长
+constexpr int      kFull    = 100;  // 全功率
+constexpr int      kHold    = 20;   // 保持功率
 void Claw_control_time(int BtnPressed) {
 	static uint32_t pulseStart = 0;     // 脉冲起始时间
 	static bool     lastBtn     = false; // 上次按钮状态
@@ -392,9 +419,8 @@ void Claw_control_time(int BtnPressed) {
 			Claw.brake(); 
 		}
 	}
-	
-	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	Claw_Rot.brake();
+
+
 }
 
 
@@ -419,6 +445,73 @@ void ClawClose(){
 
 
 
+void Claw_Turn(int btn){
+	static bool     toggled   = false;
+	static int      prevBtn   = 0;
+	static bool     fwdStalled = false;  // 正转堵转
+	static bool     revStalled = false;  // 反转堵转
+	static double   lastPos   = 0;
+	static uint32_t lastCheck = 0;
+
+	// 上升沿切换
+	if (prevBtn == 0 && btn == 1) {
+		toggled = !toggled;
+		fwdStalled = false;
+		revStalled = false;
+	}
+	prevBtn = btn;
+
+	uint32_t now = pros::millis();
+	double curPos = Claw_Rot.get_position();
+
+	// 每 200ms 检测一次编码器变化
+	if (now - lastCheck >= 200) {
+		if (std::fabs(curPos - lastPos) < 5.0) {
+			if (toggled)  fwdStalled = true;
+			else          revStalled = true;
+		}
+		lastPos   = curPos;
+		lastCheck = now;
+	}
+
+	if (toggled) {
+		if (fwdStalled) { Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); Claw_Rot.brake(); }
+		else            { Claw_Rot.move(80); }
+	} else {
+		if (revStalled) { Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); Claw_Rot.brake(); }
+		else            { Claw_Rot.move(-80); }
+	}
+}
+
+// 夹爪旋转至 90°（正转，堵转即停+HOLD）
+void Claw_Turn90() {
+	double lastPos = Claw_Rot.get_position();
+	Claw_Rot.move(80);
+	while (true) {
+		pros::delay(200);
+		double curPos = Claw_Rot.get_position();
+		if (std::fabs(curPos - lastPos) < 5.0) break;
+		lastPos = curPos;
+	}
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.brake();
+}
+
+// 夹爪旋转至 0°（反转，堵转即停+HOLD）
+void Claw_Turn0() {
+	double lastPos = Claw_Rot.get_position();
+	Claw_Rot.move(-80);
+	while (true) {
+		pros::delay(200);
+		double curPos = Claw_Rot.get_position();
+		if (std::fabs(curPos - lastPos) < 5.0) break;
+		lastPos = curPos;
+	}
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.brake();
+}
+
+
 
 
 
@@ -426,16 +519,16 @@ void ClawClose(){
 
 
 const int kDeadzone = 10; // 摇杆死区阈值
-//底盘电机控制
+const float TurnScale = 1.0; // 转向缩放系数（可调节转向灵敏度，默认1.0）
 void drive(int dir,int turn){
-	left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	
+	turn = turn * TurnScale;
+	float leftPower =  0.008 *(dir + turn);
+	float rightPower = 0.008 *(dir - turn);
 	if(fabs(dir) < kDeadzone && fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
-		left_mg.brake();
-		right_mg.brake();
+		left_motors.brake();
+		right_motors.brake();
 	} else {
-		left_mg.move(dir + turn);      // 设置左电机电压
-		right_mg.move(dir - turn);     // 设置右电机电压
+		left_motors.move(leftPower);      // 设置左电机电压
+		right_motors.move(rightPower);     // 设置右电机电压
 	} 
 }

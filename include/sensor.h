@@ -26,3 +26,10 @@ extern pros::Rotation ClawRotation;  // 爪子编码器
 extern lemlib::V5InertialSensor  imu;
 extern lemlib::V5RotationSensor  verticalEncoder;
 extern lemlib::V5RotationSensor  horizontalEncoder; 
+
+
+
+//===========================================================
+//气动电磁阀对象
+//===========================================================
+extern pros::ADIDigitalOut Piston_tuggle;  // 翻筒气动
