@@ -121,7 +121,7 @@ void opcontrol() {
 		static bool clawAt90 = false;  // 俯仰轴目标：false=0°, true=90°
 		static bool aWasActive = false;
 		bool aActive = a_macro(BtnA, clawAt90);
-		if (aWasActive && !aActive) { clawAt90 = true; }
+		if (aWasActive && !aActive) { clawAt90 = false; }  // A宏结束→夹子归0°
 		aWasActive = aActive;
 
 		static bool xWasActive = false;

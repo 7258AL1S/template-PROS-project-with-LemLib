@@ -298,10 +298,9 @@ void lift_go(float targetDeg) {
 	}
 	prev_deg = deg;
 
-	// 最短路径误差（处理 360° 环绕）
+	// 直线误差（不做 360° 环绕——机械有 (0,267) 死区，
+	// 环绕修正会误判最短方向，如 267→0 被误判为上升）
 	float err = deg - cur;
-	if (err > 180.0f)  err -= 360.0f;
-	if (err < -180.0f) err += 360.0f;
 
 	// PID 参数
 	constexpr float kP = 3.5f;
@@ -375,11 +374,11 @@ bool a_macro(int btn, bool& clawAt90) {
 			}
 		}
 		break;
-	case 1:  // 升降到位后，夹子转出来
+	case 1:  // 升降到位后，确保夹子归 0°
 		lift_go(330);
-		turn_claw(true);
+		turn_claw(false);
 		if (elapsed > 400) {
-			clawAt90 = true;
+			clawAt90 = false;
 			active   = false;
 			return false;
 		}
