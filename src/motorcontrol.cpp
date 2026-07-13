@@ -553,6 +553,49 @@ void Claw_Turn(int btn){
 	}
 }
 
+// 俯仰轴旋转（目标驱动，非阻塞）
+// target=true→90°(正转), false→0°(反转)
+void turn_claw(bool target) {
+	static bool     stallFwd    = false;
+	static bool     stallRev    = false;
+	static bool     prevTarget  = false;
+	static double   lastPos     = 0;
+	static uint32_t lastCheck   = 0;
+
+	// 目标切换时重置堵转
+	if (target != prevTarget) {
+		stallFwd   = false;
+		stallRev   = false;
+		prevTarget = target;
+		lastPos    = Claw_Rot.get_position();
+		lastCheck  = pros::millis();
+	}
+
+	uint32_t now    = pros::millis();
+	double   curPos = Claw_Rot.get_position();
+
+	// 每 250ms 检测一次堵转（编码器变化 < 3.0° 判定）
+	if (now - lastCheck >= 250) {
+		if (std::fabs(curPos - lastPos) < 3.0) {
+			if (target) stallFwd = true;
+			else        stallRev = true;
+		} else {
+			if (target) stallFwd = false;
+			else        stallRev = false;
+		}
+		lastPos   = curPos;
+		lastCheck = now;
+	}
+
+	if (target) {
+		if (stallFwd) { Claw_Rot.move(7);  }
+		else          { Claw_Rot.move(80); }
+	} else {
+		if (stallRev) { Claw_Rot.move(-7); }
+		else          { Claw_Rot.move(-80); }
+	}
+}
+
 // 夹爪旋转至 90°（正转，堵转即停+HOLD）
 void Claw_Turn90() {
 	double lastPos = Claw_Rot.get_position();

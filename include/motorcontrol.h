@@ -125,6 +125,16 @@ void ClawClose();
  * @param BtnPressed 按键按下状态
  */
 void ClawControl(bool BtnPressed);
+
+/**
+ * @brief 俯仰轴旋转（目标驱动，非阻塞）
+ * @param target true=90°位置, false=0°位置
+ *
+ * 与 Claw_Turn 使用相同的堵转阈值（250ms / 3.0°）和保持功率（±7）。
+ * 无内部边沿检测，由调用方管理 toggle 逻辑。供宏和手动控制共用。
+ */
+void turn_claw(bool target);
+
 /**
  * @brief 夹爪旋转至 90°（正转，堵转检测 + HOLD 刹停）
  */
