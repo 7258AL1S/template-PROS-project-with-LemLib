@@ -87,46 +87,106 @@ void opcontrol() {
 	while (true) {
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
 		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // 打印模拟屏幕 LCD 按键状态
+		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
 
-		// Arcade 操控模式
-		int dir = master.get_analog(ANALOG_LEFT_Y);    // 从左摇杆获取前进/后退量
-		int turn = master.get_analog(ANALOG_LEFT_X);   // 从左摇杆获取左转/右转量
-		drive(dir, turn);                             // 调用底盘控制函数，传入前进/后退和转向量
+		// === 读取所有按键 ===
+		int dir   = master.get_analog(ANALOG_LEFT_Y);
+		int turn  = master.get_analog(ANALOG_LEFT_X);
+		int chR_Y = master.get_analog(ANALOG_RIGHT_Y);   // 右Y：手动升降
+		int chR_X = master.get_analog(ANALOG_RIGHT_X);   // 右X：tuggle 气缸
 
+		int BtnA = master.get_digital(DIGITAL_A);
+		int BtnX = master.get_digital(DIGITAL_X);
+		int BtnB = master.get_digital(DIGITAL_B);
+		int BtnL1 = master.get_digital(DIGITAL_L1);
+		int BtnL2 = master.get_digital(DIGITAL_L2);
+		int BtnR1 = master.get_digital(DIGITAL_R1);
+		int BtnR2 = master.get_digital(DIGITAL_R2);
+		int BtnY  = master.get_digital(DIGITAL_Y);
 
-		// Lift 升降控制
-		int BtnTuggle = master.get_analog(ANALOG_RIGHT_X);  // RightX 按下→切换气缸状态
-		int joystickValue = master.get_analog(ANALOG_RIGHT_Y);       // 从右摇杆获取升降控制量
-		if (abs(joystickValue) < 70)  Lift_simple(joystickValue);       // 右摇杆推上→上升，拉下→下降
-		
+		// === 底盘（始终可用）===
+		drive(dir, turn);
 
-		// Claw 夹爪控制
-		int BtnClaw = master.get_digital(DIGITAL_L1);  // L1 按下→夹紧，再按→松开（toggle）
-		ClawControl(BtnClaw);  // L1 按下→夹紧，松开→放松
+		// === tuggle 气缸（始终可用）===
+		if (abs(chR_X) > 70) Piston_tuggle.set_value(true);
+		else                 Piston_tuggle.set_value(false);
 
-		//转夹子_俯仰轴
-		int BtnClawTurn = master.get_digital(DIGITAL_B);  // 
-		Claw_Turn(BtnClawTurn);  // 
+		// === 半自动宏 ===
+		// TODO: 滚转轴 Claw_Return180 后续统一剥离边沿检测为 claw_return(bool)
+		static bool clawAt90 = false;  // 俯仰轴目标：false=0°, true=90°
+		static bool aWasActive = false;
+		bool aActive = a_macro(BtnA, clawAt90);
+		if (aWasActive && !aActive) { clawAt90 = true; }
+		aWasActive = aActive;
 
-		//转夹子_滚转轴
-		int BtnClawReturn = master.get_digital(DIGITAL_L2);  //
-		Claw_Return180(BtnClawReturn);  //
+		static bool xWasActive = false;
+		bool xActive = x_macro(BtnX);
+		if (xWasActive && !xActive) { clawAt90 = true; }
+		xWasActive = xActive;
 
-		//气动滚Tuggle控制
-		
+		bool anyMacro = aActive || xActive;
 
-		if(abs(BtnTuggle) > 70) Piston_tuggle.set_value(true);
-		else Piston_tuggle.set_value(false);
+		// === 升降控制 ===
+		if (!anyMacro) {
+			if (BtnR1) {
+				// R1：升到 330° 为吸球腾出空间
+				lift_go(330);
+			} else {
+				Lift_simple(chR_Y);
+			}
+		}
+		// 宏激活时由 a_macro / x_macro 内部控制升降
 
+		// === 气动爪子（L1 toggle，宏激活时跳过）===
+		if (!anyMacro) {
+			static bool clawOpen  = true;   // true=打开, false=夹紧
+			static bool l1Prev    = false;
+			bool l1Rising = (!l1Prev && BtnL1);
+			l1Prev = BtnL1;
+			if (l1Rising) clawOpen = !clawOpen;
 
-		// 吸球控制
-		int BtnIntakeAll = master.get_digital(DIGITAL_R1);  // R1 按下→全部吸球
-		int BtnIntakeFront = master.get_digital(DIGITAL_R2);  // R2 按下→前吸球
-		int BtnIntakeReverse = master.get_digital(DIGITAL_Y);  // Down 按下→吸球电机倒退
-		IntakeControl(BtnIntakeAll, BtnIntakeFront,BtnIntakeReverse);  // 吸球控制函数，传入按键状态
-		
-		
-		pros::delay(20);                               // 等待 20ms 后进入下一帧
+			if (clawOpen) ClawOpen();
+			else          ClawClose();
+		}
+
+		// === 俯仰轴旋转（B toggle，宏激活时跳过）===
+		if (!anyMacro) {
+			static bool bPrev = false;
+			bool bRising = (!bPrev && BtnB);
+			bPrev = BtnB;
+			if (bRising) clawAt90 = !clawAt90;
+			turn_claw(clawAt90);
+		}
+
+		// === 滚转轴（L2，内部边沿检测，不动）===
+		Claw_Return180(BtnL2);
+
+		// === 吸球控制（宏激活时跳过）===
+		if (!anyMacro) {
+			if (BtnR1) {
+				// R1 吸球：先确认升降已到 330° 以上，防止结构冲突
+				float liftAngle = liftRotation.get_angle() / 100.0f;
+				float err = std::fabs(liftAngle - 330.0f);
+				if (err > 180.0f) err = 360.0f - err;
+				if (err < 10.0f) {
+					IntakeFront.move(100);
+					IntakeBack.move(100);
+				} else {
+					IntakeFront.move(0);
+					IntakeBack.move(0);
+				}
+			} else if (BtnR2) {
+				IntakeFront.move(100);
+				IntakeBack.move(0);
+			} else if (BtnY) {
+				IntakeFront.move(-100);
+				IntakeBack.move(-100);
+			} else {
+				IntakeFront.move(0);
+				IntakeBack.move(0);
+			}
+		}
+
+		pros::delay(20);
 	}
 }
