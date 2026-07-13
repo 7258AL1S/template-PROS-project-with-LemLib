@@ -110,21 +110,11 @@ void opcontrol() {
 		// === tuggle 气缸 + 手动升降互斥（同一摇杆，X/tuggle vs Y/升降）===
 		int absX = abs(chR_X);
 		int absY = abs(chR_Y);
-		bool tuggleActive = false;   // X 轴主导 → tuggle，抑制升降
-		bool liftManual   = false;   // Y 轴主导 → 手动升降，抑制 tuggle
 		constexpr int kStickDead = 70;
 
-		if (absX > kStickDead || absY > kStickDead) {
-			if (absX >= absY) {
-				Piston_tuggle.set_value(true);
-				tuggleActive = true;
-			} else {
-				Piston_tuggle.set_value(false);
-				liftManual = true;
-			}
-		} else {
-			Piston_tuggle.set_value(false);
-		}
+		// X 轴主导 → tuggle 激活，同时抑制升降输入
+		bool tuggleActive = (absX > kStickDead && absX >= absY);
+		Piston_tuggle.set_value(tuggleActive);
 
 		// === 半自动宏 ===
 		// TODO: 滚转轴 Claw_Return180 后续统一剥离边沿检测为 claw_return(bool)
@@ -141,12 +131,13 @@ void opcontrol() {
 
 		bool anyMacro = aActive || xActive;
 
-		// === 升降控制 ===
+		// === 升降控制（始终调用，内部处理死区和软刹车）===
 		if (!anyMacro) {
 			if (BtnR1) {
 				lift_go(330);
-			} else if (liftManual) {
-				Lift_simple(chR_Y);
+			} else {
+				// tuggle 激活时传 0 抑制升降，防止 X/Y 斜向同时触发
+				Lift_simple(tuggleActive ? 0 : chR_Y);
 			}
 		}
 		// 宏激活时由 a_macro / x_macro 内部控制升降
