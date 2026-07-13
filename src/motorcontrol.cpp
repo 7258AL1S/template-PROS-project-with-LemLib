@@ -374,11 +374,11 @@ bool a_macro(int btn, bool& clawAt90) {
 			}
 		}
 		break;
-	case 1:  // 升降到位后，确保夹子归 0°
+	case 1:  // 升降到位后，夹子转出到 90°
 		lift_go(330);
-		turn_claw(false);
+		turn_claw(true);
 		if (elapsed > 400) {
-			clawAt90 = false;
+			clawAt90 = true;
 			active   = false;
 			return false;
 		}
