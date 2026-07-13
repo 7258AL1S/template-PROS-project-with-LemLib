@@ -340,6 +340,128 @@ void lift_go(float targetDeg) {
 }
 
 
+// ============================================================
+// a_macro() — A 键一键宏（非阻塞状态机）
+// 流程：lift_go(330°) → 到位 → turn_claw(true)
+// ============================================================
+bool a_macro(int btn, bool& clawAt90) {
+	static bool     active   = false;
+	static int      phase    = 0;
+	static uint32_t t_start  = 0;
+	static bool     prev_btn = false;
+
+	// 上升沿触发
+	if (!prev_btn && btn && !active) {
+		active  = true;
+		phase   = 0;
+		t_start = pros::millis();
+	}
+	prev_btn = btn;
+
+	if (!active) return false;
+
+	uint32_t elapsed = pros::millis() - t_start;
+	float    angle   = liftRotation.get_angle() / 100.0f;
+	uint32_t now     = pros::millis();
+
+	switch (phase) {
+	case 0:  // 先升到 330°
+		lift_go(330);
+		{
+			float err = std::fabs(angle - 330.0f);
+			if (err > 180.0f) err = 360.0f - err;
+			if ((err < 5.0f && elapsed > 300) || elapsed > 2500) {
+				phase = 1; t_start = now;
+			}
+		}
+		break;
+	case 1:  // 升降到位后，夹子转出来
+		lift_go(330);
+		turn_claw(true);
+		if (elapsed > 400) {
+			clawAt90 = true;
+			active   = false;
+			return false;
+		}
+		break;
+	}
+
+	return true;
+}
+
+
+// ============================================================
+// x_macro() — X 键一键宏（非阻塞状态机）
+// 流程：turn_claw(true) → ClawOpen() → lift_go(0°) → 小功率压底
+// ============================================================
+bool x_macro(int btn) {
+	static bool     active   = false;
+	static int      phase    = 0;
+	static uint32_t t_start  = 0;
+	static uint32_t t_chk    = 0;
+	static float    chk_pos  = 0;
+	static bool     prev_btn = false;
+
+	// 上升沿触发
+	if (!prev_btn && btn && !active) {
+		active  = true;
+		phase   = 0;
+		t_start = pros::millis();
+	}
+	prev_btn = btn;
+
+	if (!active) return false;
+
+	uint32_t elapsed = pros::millis() - t_start;
+	float    angle   = liftRotation.get_angle() / 100.0f;
+	uint32_t now     = pros::millis();
+
+	switch (phase) {
+	case 0:  // 夹子翻转 90°
+		turn_claw(true);
+		if (elapsed > 300) { phase = 1; t_start = now; }
+		break;
+	case 1:  // 夹子打开
+		ClawOpen();
+		if (elapsed > 300) { phase = 2; t_start = now; }
+		break;
+	case 2:  // lift_go(0) 降到底
+		lift_go(0);
+		{
+			float err = std::fabs(angle - 0.0f);
+			if (err > 180.0f) err = 360.0f - err;
+			if ((err < 2.0f && elapsed > 300) || elapsed > 2000) {
+				phase   = 3;
+				t_start = now;
+				t_chk   = now;
+				chk_pos = angle;
+			}
+		}
+		break;
+	case 3:  // 小功率压底 + 堵转检测
+		turn_claw(true);
+		if (now - t_chk >= 200) {
+			float delta = std::fabs(angle - chk_pos);
+			if (delta > 180.0f) delta = 360.0f - delta;
+			if (delta < 3.0f || elapsed > 1000) {
+				lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+				lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+				lift1.brake();
+				lift2.brake();
+				active = false;
+				return false;
+			}
+			t_chk   = now;
+			chk_pos = angle;
+		}
+		Lift(-15);  // 小功率继续往下压
+		break;
+	}
+
+	return true;
+}
+
+
 
 
 
@@ -545,10 +667,10 @@ void Claw_Turn(int btn){
 	}
 
 	if (toggled) {
-		if (fwdStalled) { Claw_Rot.move(7);  }   // 小功率顶住正转限位
+		if (fwdStalled) { Claw_Rot.move(5);  }   // 小功率顶住正转限位
 		else            { Claw_Rot.move(80); }
 	} else {
-		if (revStalled) { Claw_Rot.move(-7); }   // 小功率顶住反转限位
+		if (revStalled) { Claw_Rot.move(-5); }   // 小功率顶住反转限位
 		else            { Claw_Rot.move(-80); }
 	}
 }
@@ -588,10 +710,10 @@ void turn_claw(bool target) {
 	}
 
 	if (target) {
-		if (stallFwd) { Claw_Rot.move(7);  }
+		if (stallFwd) { Claw_Rot.move(5);  }
 		else          { Claw_Rot.move(80); }
 	} else {
-		if (stallRev) { Claw_Rot.move(-7); }
+		if (stallRev) { Claw_Rot.move(-5); }
 		else          { Claw_Rot.move(-80); }
 	}
 }

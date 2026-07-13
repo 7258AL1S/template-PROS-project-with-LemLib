@@ -68,6 +68,29 @@ void LiftUpDegree(float Power,float Target,float Fulltime);
 void lift_go(float targetDeg);
 
 // ============================================================
+// 半自动宏函数声明
+// ============================================================
+
+/**
+ * @brief A 键一键宏（非阻塞状态机）
+ * @param btn      按键原始状态 (1=按下, 0=松开)
+ * @param clawAt90 [输出] 宏结束后设为 true，同步夹子俯仰状态
+ * @return true=宏运行中, false=空闲
+ *
+ * 流程：lift_go(330°) → 到位 → turn_claw(true) 转出夹子
+ */
+bool a_macro(int btn, bool& clawAt90);
+
+/**
+ * @brief X 键一键宏（非阻塞状态机）
+ * @param btn 按键原始状态 (1=按下, 0=松开)
+ * @return true=宏运行中, false=空闲
+ *
+ * 流程：turn_claw(true) → ClawOpen() → lift_go(0°) → 小功率压底+堵转检测
+ */
+bool x_macro(int btn);
+
+// ============================================================
 // 爪子函数声明
 // ============================================================
 
