@@ -107,9 +107,24 @@ void opcontrol() {
 		// === 底盘（始终可用）===
 		drive(dir, turn);
 
-		// === tuggle 气缸（始终可用）===
-		if (abs(chR_X) > 70) Piston_tuggle.set_value(true);
-		else                 Piston_tuggle.set_value(false);
+		// === tuggle 气缸 + 手动升降互斥（同一摇杆，X/tuggle vs Y/升降）===
+		int absX = abs(chR_X);
+		int absY = abs(chR_Y);
+		bool tuggleActive = false;   // X 轴主导 → tuggle，抑制升降
+		bool liftManual   = false;   // Y 轴主导 → 手动升降，抑制 tuggle
+		constexpr int kStickDead = 70;
+
+		if (absX > kStickDead || absY > kStickDead) {
+			if (absX >= absY) {
+				Piston_tuggle.set_value(true);
+				tuggleActive = true;
+			} else {
+				Piston_tuggle.set_value(false);
+				liftManual = true;
+			}
+		} else {
+			Piston_tuggle.set_value(false);
+		}
 
 		// === 半自动宏 ===
 		// TODO: 滚转轴 Claw_Return180 后续统一剥离边沿检测为 claw_return(bool)
@@ -129,9 +144,8 @@ void opcontrol() {
 		// === 升降控制 ===
 		if (!anyMacro) {
 			if (BtnR1) {
-				// R1：升到 330° 为吸球腾出空间
 				lift_go(330);
-			} else {
+			} else if (liftManual) {
 				Lift_simple(chR_Y);
 			}
 		}
