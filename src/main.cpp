@@ -169,17 +169,8 @@ void opcontrol() {
 		// === 吸球控制（宏激活时跳过）===
 		if (!anyMacro) {
 			if (BtnR1) {
-				// R1 吸球：先确认升降已到 330° 以上，防止结构冲突
-				float liftAngle = liftRotation.get_angle() / 100.0f;
-				float err = std::fabs(liftAngle - 330.0f);
-				if (err > 180.0f) err = 360.0f - err;
-				if (err < 10.0f) {
-					IntakeFront.move(100);
-					IntakeBack.move(100);
-				} else {
-					IntakeFront.move(0);
-					IntakeBack.move(0);
-				}
+				IntakeFront.move(100);
+				IntakeBack.move(100);
 			} else if (BtnR2) {
 				IntakeFront.move(100);
 				IntakeBack.move(0);
