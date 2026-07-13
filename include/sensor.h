@@ -19,8 +19,15 @@ extern pros::MotorGroup right_mg;  // 右侧电机组：正转端口 1；反转�
 
 // 爪子电机和传感器
 extern pros::Motor    Claw;  // 爪子电机
-extern pros::Motor    Claw_Rot;         // 爪子旋转电机
+extern pros::Motor    Claw_Rot;         // 爪子俯仰轴旋转电机
+extern pros::Motor    Claw_return;         // 爪子滚转轴旋转电机
 extern pros::Rotation ClawRotation;  // 爪子编码器
+
+//Intake
+extern pros::Motor    IntakeFront;  // 吸球电机前
+extern pros::Motor    IntakeBack;    // 吸球电机后
+
+
 
 // LemLib 定位硬件（IMU + 追踪轮编码器）— 端口留空，填入实际值
 extern lemlib::V5InertialSensor  imu;
@@ -33,3 +40,4 @@ extern lemlib::V5RotationSensor  horizontalEncoder;
 //气动电磁阀对象
 //===========================================================
 extern pros::ADIDigitalOut Piston_tuggle;  // 翻筒气动
+extern pros::ADIDigitalOut Piston_claw;  // 爪子气动

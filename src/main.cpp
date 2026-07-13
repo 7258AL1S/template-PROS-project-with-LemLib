@@ -96,28 +96,37 @@ void opcontrol() {
 
 
 		// Lift 升降控制
+		int BtnTuggle = master.get_analog(ANALOG_RIGHT_X);  // RightX 按下→切换气缸状态
 		int joystickValue = master.get_analog(ANALOG_RIGHT_Y);       // 从右摇杆获取升降控制量
-		Lift_simple(joystickValue);       // 右摇杆推上→上升，拉下→下降
+		if (abs(joystickValue) < 70)  Lift_simple(joystickValue);       // 右摇杆推上→上升，拉下→下降
 		
 
 		// Claw 夹爪控制
 		int BtnClaw = master.get_digital(DIGITAL_L1);  // L1 按下→夹紧，再按→松开（toggle）
-		Claw_control_time(BtnClaw);  // L1 按下→夹紧，松开→放松
-		//转夹子
+		ClawControl(BtnClaw);  // L1 按下→夹紧，松开→放松
+
+		//转夹子_俯仰轴
 		int BtnClawTurn = master.get_digital(DIGITAL_B);  // 
 		Claw_Turn(BtnClawTurn);  // 
 
+		//转夹子_滚转轴
+		int BtnClawReturn = master.get_digital(DIGITAL_L2);  //
+		Claw_Return180(BtnClawReturn);  //
 
-		//气动控制
-		int BtnTuggle = master.get_digital(DIGITAL_X);  // R1 按下→切换气缸状态
-		if(BtnTuggle) Piston_tuggle.set_value(true);
+		//气动滚Tuggle控制
+		
+
+		if(abs(BtnTuggle) > 70) Piston_tuggle.set_value(true);
 		else Piston_tuggle.set_value(false);
 
 
-
-
-
-
+		// 吸球控制
+		int BtnIntakeAll = master.get_digital(DIGITAL_R1);  // R1 按下→全部吸球
+		int BtnIntakeFront = master.get_digital(DIGITAL_R2);  // R2 按下→前吸球
+		int BtnIntakeReverse = master.get_digital(DIGITAL_Y);  // Down 按下→吸球电机倒退
+		IntakeControl(BtnIntakeAll, BtnIntakeFront,BtnIntakeReverse);  // 吸球控制函数，传入按键状态
+		
+		
 		pros::delay(20);                               // 等待 20ms 后进入下一帧
 	}
 }

@@ -36,6 +36,9 @@ void autoSubsystems() {
 // 自动程序
 // ============================================================
 void auto1() {
+
+    //left_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
+    //right_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
     // 启动子系统后台任务（升降 + 夹爪旋转与底盘并行）
     pros::Task subTask(autoSubsystems);
 
@@ -63,10 +66,17 @@ void auto1() {
 
     lemlib::TurnToParams turnParams;
     lemlib::TurnToSettings turnSettings;
-
+    Piston_tuggle.set_value(true);
+   // pros::delay(200);
+    Piston_tuggle.set_value(false);
+   // pros::delay(200);
+    Piston_tuggle.set_value(true);
+   // pros::delay(200);
+    Piston_tuggle.set_value(false);
+    
     ClawClose();
     params.reversed = true;
-    lemlib::moveToPoint({-12.7_in, 0_in}, 1000_msec, params, settings);
+    lemlib::moveToPoint({-12.7_in, 0_in}, 900_msec, params, settings);
 
     liftCmd = {60, 340, 500};
     liftGo = true;
@@ -76,23 +86,48 @@ void auto1() {
     clawGo = true;
 
     params.reversed = false;
-    lemlib::moveToPoint({-12.7_in, 11.5_in}, 1000_msec, params, settings);
+    lemlib::moveToPoint({-12.7_in, 11.5_in}, 800_msec, params, settings);
 
     LiftUpDegree(-33, 352, 500);
-    pros::delay(200);
+    pros::delay(80);
     ClawOpen();
-    pros::delay(200);
+    pros::delay(80);
 
     params.reversed = true;
-    lemlib::moveToPoint({-12.7_in, -2_in}, 1000_msec, params, settings);
+    lemlib::moveToPoint({-12.7_in, -3_in}, 850_msec, params, settings);
     liftCmd = {-33, 360, 500};
     liftGo = true;
-    turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.05);
-    lemlib::turnTo(135_stDeg, 1000_msec, turnParams, turnSettings);
+    turnSettings.angularPID = lemlib::PID(1.42, 0.0, 0.06);
+    lemlib::turnTo(135_stDeg, 900_msec, turnParams, turnSettings);
+
+  
     params.reversed = false;
     //lemlib::moveToPose({-25.7_in, 13_in, 135_stDeg}, 2000_msec, Poseparams, Posesettings);
-    lemlib::moveToPoint({-28.5_in, 13.8_in}, 2500_msec, params, settings);
-
+    lemlib::moveToPoint({-29.1_in, 13.4_in}, 1100_msec, params, settings);
+    //-27.3,14.3
     ClawClose();
+    pros::delay(50);
+    liftCmd = {75, 305, 600};
+    liftGo = true;
+    params.reversed = true;
+    lemlib::moveToPoint({-24.5_in, 8.8_in}, 1000_msec, params, settings);
+    turnSettings.angularPID = lemlib::PID(1.05, 0.0, 0.068);
+    lemlib::turnTo(45_stDeg, 800_msec, turnParams, turnSettings);
+    params.reversed = false;
+    lemlib::moveToPoint({-19.5_in, 13.8_in}, 700_msec, params, settings);
+    LiftUpDegree(-37, 360, 400);
+    pros::delay(60);
+    ClawOpen();
+    pros::delay(60);
+    params.reversed = true;
+    lemlib::moveToPoint({-24.5_in, 8.8_in}, 800_msec, params, settings);
+    lemlib::turnTo(135_stDeg, 800_msec, turnParams, turnSettings);
+    liftCmd = {-40, 360, 600};
+    liftGo = true;
+    
+    params.reversed = false;
+    lemlib::moveToPoint({-34.1_in, 18.4_in}, 800_msec, params, settings);
 
+    turnSettings.angularPID = lemlib::PID(1.05, 0.0, 0.06);
+    lemlib::turnTo(45_stDeg, 800_msec, turnParams, turnSettings);
 }

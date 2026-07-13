@@ -207,7 +207,7 @@ void Lift(float Power){
 		}
 
 		uint32_t elapsed = pros::millis() - zeroStartTime;
-		if (elapsed < 150) {
+		if (elapsed < 30) {
 			// 前 150ms：BRAKE 模式（电阻制动，快速减速）
 			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
@@ -271,6 +271,73 @@ void LiftUpDegree(float Power, float Target, float Fulltime) {
 }
 
 
+// 非阻塞 PID 升降定位，需每帧调用
+void lift_go(float targetDeg) {
+	static float last_err  = 0;
+	static float acc_err   = 0;
+	static float prev_deg  = -999;  // 上一次目标，初始哨兵值用于首次检测
+
+	// 当前角度（度），PROS Rotation 传感器返回厘度，÷100 转度
+	float cur = liftRotation.get_angle() / 100.0f;
+
+	// 目标归一化到 [0, 360)
+	float deg = std::fmod(targetDeg, 360.0f);
+	if (deg < 0.0f) deg += 360.0f;
+
+	// 机械限位：可达范围 0° 和 [267°, 359°]
+	if (deg > 0.0f && deg < 267.0f) {
+		deg = (deg < 133.5f) ? 0.0f : 267.0f;
+	} else if (deg >= 359.0f) {
+		deg = 359.0f;
+	}
+
+	// 目标切换时重置 PID 状态，避免微分冲击
+	if (std::fabs(deg - prev_deg) > 5.0f) {
+		last_err = 0;
+		acc_err  = 0;
+	}
+	prev_deg = deg;
+
+	// 最短路径误差（处理 360° 环绕）
+	float err = deg - cur;
+	if (err > 180.0f)  err -= 360.0f;
+	if (err < -180.0f) err += 360.0f;
+
+	// PID 参数
+	constexpr float kP = 3.5f;
+	constexpr float kI = 0.0f;
+	constexpr float kD = 10.0f;
+
+	// 积分抗饱和：误差小时累积，大时清零
+	if (std::fabs(err) < 25.0f) acc_err += err;
+	else                        acc_err  = 0.0f;
+
+	float out = kP * err + kI * acc_err + kD * (err - last_err);
+	last_err = err;
+
+	// 输出限幅
+	const float maxOut = 100.0f;
+	if (out >  maxOut) out =  maxOut;
+	if (out < -maxOut) out = -maxOut;
+
+	// 最低输出功率（远离目标 > 3° 时防太慢，逼近阶段交给 PID 自然衰减）
+	const float minOut = 15.0f;
+	if (std::fabs(err) > 3.0f) {
+		if      (out > 0 && out <  minOut) out =  minOut;
+		else if (out < 0 && out > -minOut) out = -minOut;
+	}
+
+	// 到位死区：HOLD 锁死
+	if (std::fabs(err) < 0.4f && std::fabs(out) < 17.0f) {
+		lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+		lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+		lift1.brake();
+		lift2.brake();
+	} else {
+		lift1.move_voltage(static_cast<int32_t>(out * 128));
+		lift2.move_voltage(static_cast<int32_t>(out * 128));
+	}
+}
 
 
 
@@ -301,6 +368,8 @@ void LiftUpDegree(float Power, float Target, float Fulltime) {
 
 
 
+
+/*
 
 
 //爪子（按下↔再按下切换 + 双向堵转检测）
@@ -426,22 +495,23 @@ void Claw_control_time(int BtnPressed) {
 
 
 
+*/
+////以上为电机夹子控制函数，已废弃
 
 void ClawOpen(){
-	Claw.move(-kFull);
-	pros::delay(kPulseMs);
-	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	Claw.brake();
+	Piston_claw.set_value(true);
 }
 
 void ClawClose(){
-	Claw.move(kFull);
-	pros::delay(kPulseMs);
-	Claw.move(kHold);
+	Piston_claw.set_value(false);
 }
 
 
 
+//爪子控制（气动：close=true 夹紧, false 松开）
+void ClawControl(bool BtnPressed){
+	Piston_claw.set_value(BtnPressed);
+}
 
 
 
@@ -465,8 +535,8 @@ void Claw_Turn(int btn){
 	double curPos = Claw_Rot.get_position();
 
 	// 每 200ms 检测一次编码器变化
-	if (now - lastCheck >= 200) {
-		if (std::fabs(curPos - lastPos) < 5.0) {
+	if (now - lastCheck >= 250) {
+		if (std::fabs(curPos - lastPos) < 3.0) {
 			if (toggled)  fwdStalled = true;
 			else          revStalled = true;
 		}
@@ -475,10 +545,10 @@ void Claw_Turn(int btn){
 	}
 
 	if (toggled) {
-		if (fwdStalled) { Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); Claw_Rot.brake(); }
+		if (fwdStalled) { Claw_Rot.move(7);  }   // 小功率顶住正转限位
 		else            { Claw_Rot.move(80); }
 	} else {
-		if (revStalled) { Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); Claw_Rot.brake(); }
+		if (revStalled) { Claw_Rot.move(-7); }   // 小功率顶住反转限位
 		else            { Claw_Rot.move(-80); }
 	}
 }
@@ -512,9 +582,104 @@ void Claw_Turn0() {
 }
 
 
+void Claw_Return180(int btn) {
+	static bool     toggled      = false;  // false=0°位置, true=180°位置
+	static int      prevBtn      = 0;      // 上一帧按键状态（上升沿检测）
+	static bool     stallAt180   = false;  // 180°方向堵转（碰到物理限位）
+	static bool     stallAt0     = false;  // 0°方向堵转（碰到物理限位）
+	static double   lastPos      = 0;
+	static uint32_t lastCheck    = 0;
+
+	// === 上升沿切换目标状态 ===
+	if (prevBtn == 0 && btn == 1) {
+		toggled    = !toggled;
+		stallAt180 = false;
+		stallAt0   = false;
+	}
+	prevBtn = btn;
+
+	uint32_t now    = pros::millis();
+	double   curPos = Claw_return.get_position();
+
+	// === 每 200ms 检测一次堵转（编码器变化 < 5° 判定为堵转） ===
+	if (now - lastCheck >= 250) {
+		if (std::fabs(curPos - lastPos) < 3.0) {
+			if (toggled) stallAt180 = true;
+			else         stallAt0   = true;
+		} else {
+			// 有移动 → 清除误判
+			if (toggled) stallAt180 = false;
+			else         stallAt0   = false;
+		}
+		lastPos   = curPos;
+		lastCheck = now;
+	}
+
+	// === 驱动 ===
+	if (toggled) {
+		// 目标：180°位置（电机反转）
+		if (stallAt180) {
+			Claw_return.move(-7);  // 小功率顶住180°限位
+		} else {
+			Claw_return.move(-80);
+		}
+	} else {
+		// 目标：0°位置（电机正转）
+		if (stallAt0) {
+			Claw_return.move(7);   // 小功率顶住0°限位
+		} else {
+			Claw_return.move(80);
+		}
+	}
+}
 
 
+void IntakeAll(int BtnPressed){
+	if(BtnPressed){
+		IntakeFront.move(100);
+		IntakeBack.move(100);
+	} else {
+		IntakeFront.move(0);
+		IntakeBack.move(0);
+	}
+}
 
+void IntakeFrontOnly(int BtnPressed){
+	if(BtnPressed){
+		IntakeFront.move(100);
+		IntakeBack.move(0);
+	} else {
+		IntakeFront.move(0);
+		IntakeBack.move(0);
+	}
+}
+
+void IntakeControl(int BtnIntakeAll, int BtnIntakeFront,int BtnIntakeReverse){
+	if(BtnIntakeAll){
+		IntakeFront.move(100);
+		IntakeBack.move(100);
+	} else if(BtnIntakeFront){
+		IntakeFront.move(100);
+		IntakeBack.move(0);
+	} else if(BtnIntakeReverse){
+		IntakeFront.move(-100);
+		IntakeBack.move(-100);
+	}
+	else {
+		IntakeFront.move(0);
+		IntakeBack.move(0);
+	}
+}
+
+void IntakeReverse(int BtnPressed){
+	if(BtnPressed){
+		IntakeFront.move(-100);
+		IntakeBack.move(-100);
+	} else {
+		IntakeFront.move(0);
+		IntakeBack.move(0);
+	}
+}
 
 
 

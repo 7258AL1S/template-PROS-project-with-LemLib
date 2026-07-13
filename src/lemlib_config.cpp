@@ -10,7 +10,7 @@
 // ============================================================
 
 // PID 控制器
-const lemlib::PID angular_pid(1.1, 0.0, 0.06);    // 转向 PID
+const lemlib::PID angular_pid(1.16, 0.0, 0.05);    // 转向 PID
 const lemlib::PID lateral_pid(4.3, 0.0, 0.29);    // 横向 PID
 
 
@@ -51,7 +51,7 @@ const std::function<units::Pose()> pose_getter = []() { return odom->getPose(); 
 const lemlib::ExitConditionGroup<AngleRange> angular_exit_conditions(
     std::vector{lemlib::ExitCondition<AngleRange>(2_stDeg, 250_msec)});
 const lemlib::ExitConditionGroup<Length> lateral_exit_conditions(
-    std::vector{lemlib::ExitCondition<Length>(0.5_in, 250_msec)});
+    std::vector{lemlib::ExitCondition<Length>(5_in, 250_msec)});
 
 // 底盘参数
 const Length track_width = 15.43_in;// 轮距（左右轮中心间距）

@@ -20,8 +20,16 @@ lemlib::MotorGroup left_motors({-10, 9, -8}, 266_rpm);
 lemlib::MotorGroup right_motors({1, -2, 3}, 266_rpm);
 
 pros::Motor    Claw(15);  // 爪子电机
-pros::Motor    Claw_Rot(-14);         // 爪子旋转电机
+pros::Motor    Claw_Rot(-14);         // 爪子俯仰轴旋转电机
+pros::Motor    Claw_return(17);         // 爪子滚转轴旋转电机
 pros::Rotation ClawRotation(13);  // 爪子编码器
+
+
+//Intake
+pros::Motor    IntakeFront(-12);  // 吸球电机前
+pros::Motor    IntakeBack(-16);    // 吸球电机后
+
+
 
 // LemLib 定位硬件 — 请填入实际端口号
 lemlib::V5InertialSensor  imu(4);                  // TODO: 改成 IMU 实际端口
@@ -34,3 +42,4 @@ lemlib::V5RotationSensor  horizontalEncoder(6);   // 反转：倒车时 X 减小
 //气动电磁阀对象
 //===========================================================
 pros::ADIDigitalOut Piston_tuggle('A');  // 翻筒气动
+pros::ADIDigitalOut Piston_claw('H');  // 爪子气动
