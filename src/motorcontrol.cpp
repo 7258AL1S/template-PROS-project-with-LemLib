@@ -298,12 +298,16 @@ void lift_go(float targetDeg) {
 	}
 	prev_deg = deg;
 
-	// 直线误差（不做 360° 环绕——机械有 (0,267) 死区，
-	// 环绕修正会误判最短方向，如 267→0 被误判为上升）
-	float err = deg - cur;
+	// 直线误差（cur - deg：负=上升, 正=下降，与 Lift_pid 方向一致）
+	float err = cur - deg;
+
+	// 传感器跨 0↔359 跳变时 reset last_err，防止 D 项巨大冲击
+	if (std::fabs(err - last_err) > 180.0f) {
+		last_err = err;
+	}
 
 	// PID 参数
-	constexpr float kP = 3.5f;
+	constexpr float kP = 2.0f;
 	constexpr float kI = 0.0f;
 	constexpr float kD = 10.0f;
 
@@ -417,7 +421,7 @@ bool x_macro(int btn) {
 
 	switch (phase) {
 	case 0:  // 夹子翻转 90°
-		turn_claw(true);
+		turn_claw(false);
 		if (elapsed > 300) { phase = 1; t_start = now; }
 		break;
 	case 1:  // 夹子打开
@@ -438,7 +442,7 @@ bool x_macro(int btn) {
 		}
 		break;
 	case 3:  // 小功率压底 + 堵转检测
-		turn_claw(true);
+		turn_claw(false);
 		if (now - t_chk >= 200) {
 			float delta = std::fabs(angle - chk_pos);
 			if (delta > 180.0f) delta = 360.0f - delta;
