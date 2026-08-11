@@ -708,7 +708,15 @@ void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed){
 	}
 }
 
-
+void PickControl(bool tuggleActive){
+	
+	if(tuggleActive){
+		TugglePick.move(-127);
+	}
+	else{
+		TugglePick.move(0);
+	}
+}
 
 void Claw_Turn(int btn){
 	static bool     toggled   = false;

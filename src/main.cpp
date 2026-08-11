@@ -123,6 +123,7 @@ void opcontrol() {
 		bool tuggleActive = (absX > kStickDead && absX >= absY);
 		Piston_tuggle.set_value(tuggleActive);
 		Piston_tuggle2.set_value(tuggleActive);
+		PickControl(tuggleActive);
 /*
 		// 半自动宏
 		static bool clawAt90 = false;

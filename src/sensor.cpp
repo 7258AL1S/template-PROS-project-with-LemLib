@@ -26,6 +26,7 @@ pros::Rotation ClawRotation(-21);  // 爪子编码器
 pros::Motor    Claw_Left(8);         // 爪子左旋转电机
 pros::Motor    Claw_Right(6);         // 爪子右旋转电机
 
+pros::Motor    TugglePick(-21);  // tuggle拨片
 
 //Intake
 pros::Motor    IntakeFront(-21);  // 吸球电机前

@@ -26,6 +26,8 @@ extern pros::Rotation ClawRotation;  // 爪子编码器
 extern pros::Motor    Claw_Left;         // 爪子左旋转电机
 extern pros::Motor    Claw_Right;         // 爪子右旋转电机
 
+extern pros::Motor    TugglePick;  // tuggle拨片
+
 //Intake
 extern pros::Motor    IntakeFront;  // 吸球电机前
 extern pros::Motor    IntakeBack;    // 吸球电机后

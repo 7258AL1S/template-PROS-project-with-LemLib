@@ -156,6 +156,11 @@ void ClawOuttake();
  * @param BtnPressed 按键按下状态
  */
 void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed);
+/**
+ * @brief tuggle拨片控制
+ * @param tuggleActive 拨片按下状态
+ */
+void PickControl(bool tuggleActive);
 
 /**
  * @brief 俯仰轴旋转（目标驱动，非阻塞）
