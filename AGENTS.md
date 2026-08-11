@@ -89,6 +89,12 @@ lemlib::V5InertialSensor imu(15);
 - **`verticalEncoder` 没有对应物理设备**：仅为代码中保留的对象，无实际追踪轮。
 - **所有端口 21 的设备对象均为废弃对象**：`Claw_Rot`、`Claw_return`、`ClawRotation`、`IntakeFront`、`IntakeBack` 已废弃，不要使用、不要依赖其行为。
 
+### 工作流约定（记忆）
+
+- **任何涉及重构或新增函数的改动**：动手前先检查当前更改是否已推送到 git；若未推送，先提交并推送，再开始重构/新增函数。
+- 重构或新增函数完成后，**必须再提交并推送一次**。
+- 提交信息由 Codex 自行撰写（中文，说明改动目的与要点）。
+
 ### 优化级别
 `-Os`（体积优化），ARM Cortex-A9 + NEON FPU + hard float ABI。
 
