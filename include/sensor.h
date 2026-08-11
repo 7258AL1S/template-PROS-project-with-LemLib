@@ -23,6 +23,9 @@ extern pros::Motor    Claw_Rot;         // 爪子俯仰轴旋转电机
 extern pros::Motor    Claw_return;         // 爪子滚转轴旋转电机
 extern pros::Rotation ClawRotation;  // 爪子编码器
 
+extern pros::Motor    Claw_Left;         // 爪子左旋转电机
+extern pros::Motor    Claw_Right;         // 爪子右旋转电机
+
 //Intake
 extern pros::Motor    IntakeFront;  // 吸球电机前
 extern pros::Motor    IntakeBack;    // 吸球电机后
@@ -40,4 +43,5 @@ extern lemlib::V5RotationSensor  horizontalEncoder;
 //气动电磁阀对象
 //===========================================================
 extern pros::ADIDigitalOut Piston_tuggle;  // 翻筒气动
+extern pros::ADIDigitalOut Piston_tuggle2;  // 翻筒气动
 extern pros::ADIDigitalOut Piston_claw;  // 爪子气动

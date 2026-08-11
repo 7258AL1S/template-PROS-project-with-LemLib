@@ -207,7 +207,7 @@ void Lift(float Power){
 		}
 
 		uint32_t elapsed = pros::millis() - zeroStartTime;
-		if (elapsed < 30) {
+		if (elapsed < 0) {
 			// 前 150ms：BRAKE 模式（电阻制动，快速减速）
 			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
@@ -298,8 +298,8 @@ void lift_go(float targetDeg) {
 	}
 	prev_deg = deg;
 
-	// 直线误差（cur - deg：负=上升, 正=下降，与 Lift_pid 方向一致）
-	float err = cur - deg;
+	// 误差（deg - cur：正=升, 负=降）
+	float err = -(deg - cur);
 
 	// 传感器跨 0↔359 跳变时 reset last_err，防止 D 项巨大冲击
 	if (std::fabs(err - last_err) > 180.0f) {
@@ -307,7 +307,7 @@ void lift_go(float targetDeg) {
 	}
 
 	// PID 参数
-	constexpr float kP = 2.0f;
+	constexpr float kP = 2.5f;
 	constexpr float kI = 0.0f;
 	constexpr float kD = 10.0f;
 
@@ -380,12 +380,7 @@ bool a_macro(int btn, bool& clawAt90) {
 		break;
 	case 1:  // 升降到位后，夹子转出到 90°
 		lift_go(330);
-		turn_claw(true);
-		if (elapsed > 400) {
-			clawAt90 = true;
-			active   = false;
-			return false;
-		}
+		
 		break;
 	}
 
@@ -420,18 +415,11 @@ bool x_macro(int btn) {
 	uint32_t now     = pros::millis();
 
 	switch (phase) {
-	case 0:  // 夹子翻转 90°
-		turn_claw(false);
-		if (elapsed > 300) { phase = 1; t_start = now; }
-		break;
-	case 1:  // 夹子打开
-		ClawOpen();
-		if (elapsed > 300) { phase = 2; t_start = now; }
-		break;
-	case 2:  // lift_go(0) 降到底
-		lift_go(0);
+
+	case 0:  // lift_go(0) 降到底
+		lift_go(359);
 		{
-			float err = std::fabs(angle - 0.0f);
+			float err = std::fabs(angle - 359.0f);
 			if (err > 180.0f) err = 360.0f - err;
 			if ((err < 2.0f && elapsed > 300) || elapsed > 2000) {
 				phase   = 3;
@@ -441,7 +429,7 @@ bool x_macro(int btn) {
 			}
 		}
 		break;
-	case 3:  // 小功率压底 + 堵转检测
+	case 1:  // 小功率压底 + 堵转检测
 		turn_claw(false);
 		if (now - t_chk >= 200) {
 			float delta = std::fabs(angle - chk_pos);
@@ -623,19 +611,101 @@ void Claw_control_time(int BtnPressed) {
 */
 ////以上为电机夹子控制函数，已废弃
 
+// ============================================================
+// ClawOpen / ClawClose — 计时器控制的电机夹子开关
+// 正转 = 开，反转 = 关，满功率脉冲 250ms，之后 HOLD 锁死
+// ============================================================
+static bool     clawTargetOpen = false;   // 当前目标：true=开, false=关
+static uint32_t clawPulseStart = 0;       // 脉冲起始时间
+static bool     clawStateInit  = true;    // 首次调用标志
+int ClawTime = 300; // 爪子开关脉冲时间（毫秒）
+
 void ClawOpen(){
-	Piston_claw.set_value(true);
+	if (!clawTargetOpen || clawStateInit) {
+		clawTargetOpen = true;
+		clawPulseStart = pros::millis();
+		clawStateInit  = false;
+	}
+
+	if (pros::millis() - clawPulseStart < ClawTime) {
+		Claw.move(127);  // 满功率正转 → 开
+	} else {
+		//Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+		//Claw.brake();
+		Claw.move(10);
+	}
 }
+
 
 void ClawClose(){
-	Piston_claw.set_value(false);
+
+	if (clawTargetOpen || clawStateInit) {
+		clawTargetOpen = false;
+		clawPulseStart = pros::millis();
+		clawStateInit  = false;
+	}
+
+	if (pros::millis() - clawPulseStart < ClawTime) {
+		Claw.move(-127);  // 满功率反转 → 关
+	} else {
+		Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+		Claw.brake();
+	}
+}
+
+void ClawOpenSimple(){
+	Claw.move(127);
+}
+void ClawCloseSimple(){
+	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	Claw.brake();
+}
+
+
+void ClawIntake(){
+	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	Claw_Left.move(70);
+	Claw_Right.move(-70);
+}
+
+void ClawOuttake(){
+	Claw_Left.move(-70);
+	Claw_Right.move(70);
 }
 
 
 
-//爪子控制（气动：close=true 夹紧, false 松开）
-void ClawControl(bool BtnPressed){
-	Piston_claw.set_value(BtnPressed);
+static bool clawOpen  = false;   // 当前目标：true=开, false=关
+static bool prevClaw  = false;   // 上一帧按键状态
+void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed){
+	Claw_Left.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	Claw_Right.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	if(IntakePressed){
+		ClawCloseSimple();
+		clawOpen = false;
+		ClawIntake();
+	}
+	else if(OuttakePressed){
+		ClawOuttake();
+	}
+	else{
+		Claw_Left.move(0);
+		Claw_Right.move(0);
+	}
+
+	// 爪子：按下切换（上升沿 toggle）
+	
+
+	if (!prevClaw && ClawPressed) {
+		clawOpen = !clawOpen;
+	}
+	prevClaw = ClawPressed;
+
+	if (clawOpen) {
+		ClawOpenSimple();
+	} else {
+		ClawCloseSimple();
+	}
 }
 
 
@@ -659,21 +729,27 @@ void Claw_Turn(int btn){
 	uint32_t now = pros::millis();
 	double curPos = Claw_Rot.get_position();
 
-	// 每 200ms 检测一次编码器变化
+	// 每 250ms 检测一次编码器变化（< 3.0° 判定堵转，> 8.0° 才清除，迟滞防抖）
 	if (now - lastCheck >= 250) {
-		if (std::fabs(curPos - lastPos) < 3.0) {
+		double delta = std::fabs(curPos - lastPos);
+		if (delta < 3.0) {
 			if (toggled)  fwdStalled = true;
 			else          revStalled = true;
+		} else if (delta > 8.0) {
+			// 明显移动 → 清除堵转（迟滞带 3.0~8.0° 内维持原状态）
+			if (toggled)  fwdStalled = false;
+			else          revStalled = false;
 		}
 		lastPos   = curPos;
 		lastCheck = now;
 	}
 
+	// 堵转后用 move_voltage 恒定电压顶住限位，避免 move() 速度指令触发 V5 内部堵转蜂鸣
 	if (toggled) {
-		if (fwdStalled) { Claw_Rot.move(5);  }   // 小功率顶住正转限位
+		if (fwdStalled) { Claw_Rot.move_voltage(1000);  }   // 恒定电压顶住正转限位
 		else            { Claw_Rot.move(80); }
 	} else {
-		if (revStalled) { Claw_Rot.move(-5); }   // 小功率顶住反转限位
+		if (revStalled) { Claw_Rot.move_voltage(-1000); }   // 恒定电压顶住反转限位
 		else            { Claw_Rot.move(-80); }
 	}
 }
@@ -699,12 +775,15 @@ void turn_claw(bool target) {
 	uint32_t now    = pros::millis();
 	double   curPos = Claw_Rot.get_position();
 
-	// 每 250ms 检测一次堵转（编码器变化 < 3.0° 判定）
+	// 每 250ms 检测一次堵转（编码器变化 < 3.0° 判定堵转，> 8.0° 才清除堵转，迟滞防抖）
 	if (now - lastCheck >= 250) {
-		if (std::fabs(curPos - lastPos) < 3.0) {
+		double delta = std::fabs(curPos - lastPos);
+		if (delta < 3.0) {
+			// 几乎未动 → 堵转
 			if (target) stallFwd = true;
 			else        stallRev = true;
-		} else {
+		} else if (delta > 8.0) {
+			// 明显移动 → 清除堵转（迟滞带 3.0~8.0° 内维持原状态）
 			if (target) stallFwd = false;
 			else        stallRev = false;
 		}
@@ -712,11 +791,12 @@ void turn_claw(bool target) {
 		lastCheck = now;
 	}
 
+	// 堵转后用 move_voltage（恒定电压）顶住限位，避免 move() 速度指令触发 V5 内部堵转蜂鸣
 	if (target) {
-		if (stallFwd) { Claw_Rot.move(5);  }
+		if (stallFwd) { Claw_Rot.move_voltage(1000);  }
 		else          { Claw_Rot.move(80); }
 	} else {
-		if (stallRev) { Claw_Rot.move(-5); }
+		if (stallRev) { Claw_Rot.move_voltage(-1000); }
 		else          { Claw_Rot.move(-80); }
 	}
 }
@@ -754,7 +834,7 @@ void Claw_Return180(int btn) {
 	static bool     toggled      = false;  // false=0°位置, true=180°位置
 	static int      prevBtn      = 0;      // 上一帧按键状态（上升沿检测）
 	static bool     stallAt180   = false;  // 180°方向堵转（碰到物理限位）
-	static bool     stallAt0     = false;  // 0°方向堵转（碰到物理限位）
+	static bool     stallAt0     = true;  // 0°方向堵转（碰到物理限位）
 	static double   lastPos      = 0;
 	static uint32_t lastCheck    = 0;
 
@@ -769,35 +849,66 @@ void Claw_Return180(int btn) {
 	uint32_t now    = pros::millis();
 	double   curPos = Claw_return.get_position();
 
-	// === 每 200ms 检测一次堵转（编码器变化 < 5° 判定为堵转） ===
+	// === 每 250ms 检测一次堵转（< 3.0° 判定堵转，> 8.0° 才清除，迟滞防抖） ===
 	if (now - lastCheck >= 250) {
-		if (std::fabs(curPos - lastPos) < 3.0) {
+		double delta = std::fabs(curPos - lastPos);
+		if (delta < 8.0) {
 			if (toggled) stallAt180 = true;
 			else         stallAt0   = true;
-		} else {
-			// 有移动 → 清除误判
-			if (toggled) stallAt180 = false;
-			else         stallAt0   = false;
 		}
 		lastPos   = curPos;
 		lastCheck = now;
 	}
 
-	// === 驱动 ===
+	// === 驱动：堵转后用 move_voltage 恒定电压顶住，避免 move() 速度指令触发 V5 内部堵转蜂鸣 ===
 	if (toggled) {
 		// 目标：180°位置（电机反转）
 		if (stallAt180) {
-			Claw_return.move(-7);  // 小功率顶住180°限位
+			Claw_return.move_voltage(-500);  // 恒定电压顶住180°限位
 		} else {
 			Claw_return.move(-80);
 		}
 	} else {
 		// 目标：0°位置（电机正转）
 		if (stallAt0) {
-			Claw_return.move(7);   // 小功率顶住0°限位
+			Claw_return.move_voltage(500);   // 恒定电压顶住0°限位
+
 		} else {
 			Claw_return.move(80);
 		}
+	}
+}
+
+// ============================================================
+// Claw_Return180_time — 计时版滚转轴（非阻塞状态机）
+// 取消堵转检测，改为 500ms 全功率 + 400mV 保持
+// ============================================================
+void Claw_Return180_time(int btn) {
+	static bool     toggled   = false;  // false=0°, true=180°
+	static int      prevBtn   = 0;
+	static bool     moving    = false;  // true=全功率移动中, false=保持中
+	static uint32_t moveStart = 0;
+
+	// 上升沿切换目标，启动移动
+	if (prevBtn == 0 && btn == 1) {
+		toggled   = !toggled;
+		moving    = true;
+		moveStart = pros::millis();
+	}
+	prevBtn = btn;
+
+	uint32_t now     = pros::millis();
+	uint32_t elapsed = now - moveStart;
+
+	if (moving && elapsed < 800) {
+		// 全功率移动
+		if (toggled) Claw_return.move(-100);
+		else         Claw_return.move(100);
+	} else {
+		// 时间到，切换为小电压保持
+		moving = false;
+		if (toggled) Claw_return.move_voltage(-400);
+		else         Claw_return.move_voltage(400);
 	}
 }
 
@@ -855,8 +966,14 @@ const int kDeadzone = 10; // 摇杆死区阈值
 const float TurnScale = 1.0; // 转向缩放系数（可调节转向灵敏度，默认1.0）
 void drive(int dir,int turn){
 	turn = turn * TurnScale;
-	float leftPower =  0.008 *(dir + turn);
-	float rightPower = 0.008 *(dir - turn);
+	// 摇杆 [-127,127] → LemLib move() 期望 [-1.0, +1.0]
+	float leftPower  = (dir + turn) / 127.0f;
+	float rightPower = (dir - turn) / 127.0f;
+	// 钳位到 [-1.0, 1.0]（dir+turn 最大可达 ±254）
+	if (leftPower  >  1.0f) leftPower  =  1.0f;
+	if (leftPower  < -1.0f) leftPower  = -1.0f;
+	if (rightPower >  1.0f) rightPower =  1.0f;
+	if (rightPower < -1.0f) rightPower = -1.0f;
 	if(fabs(dir) < kDeadzone && fabs(turn) < kDeadzone){// 前后死区 转向死区 ±10
 		left_motors.brake();
 		right_motors.brake();
@@ -864,4 +981,170 @@ void drive(int dir,int turn){
 		left_motors.move(leftPower);      // 设置左电机电压
 		right_motors.move(rightPower);     // 设置右电机电压
 	} 
+}
+
+// ============================================================
+// GoForWard — 竖直定位轮 + PID 闭环前进/后退
+// ============================================================
+
+// GoForWard 实时位移/目标（供 autonomous 屏幕调试显示，非阻塞读取）
+static float walkDistDisplay   = 0.0f;  // 当前 GoForWard 已走距离（英寸）
+static float walkTargetDisplay = 0.0f;  // 当前 GoForWard 目标距离（英寸）
+
+float GetWalkDist() { return walkDistDisplay; }
+float GetWalkTarget() { return walkTargetDisplay; }
+
+void GoForWard(float Power, float Target, float FullTime, const LiftPID& pid) {
+	// 竖直定位轮：horizontalEncoder 测量前进/后退（端口见 sensor.cpp）
+	// 轮径 2 英寸，周长 = π × 2 ≈ 6.283 in
+	constexpr float kWheelCircumference = 6.2831853f; // 2_in * π
+
+	walkTargetDisplay = Target;  // 供屏幕显示当前段目标
+
+	// --- 可调参数 ---
+	constexpr uint32_t kRampTimeMs = 80;   // 软启动斜坡时长（毫秒）
+	constexpr float    kRampStart  = 0.8f;  // 斜坡起始功率比例
+	constexpr float    kMinPower   = 0.15f; // 最小功率保底（克服静摩擦，需实测标定）
+	constexpr float    kStictionDegPerTick = 0.5f; // 堵转判定：每 10ms 编码器变化 < 此值=卡死
+
+	// 记录起始编码器角度（度），不复位，不干扰里程计
+	float startAngle = static_cast<float>(
+		horizontalEncoder.getAngle().convert(deg));
+
+	float err = 0, lastErr = 0, accErr = 0, out = 0;
+	float absTarget = fabs(Target);
+	uint32_t startTime = pros::millis();
+
+	// 堵转检测用：上一拍的编码器角度
+	float lastEncAngle = startAngle;
+
+	// 运动中用 BRAKE 模式，到位后 brake() 有阻力不会溜车
+	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+	right_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+
+	while (pros::millis() - startTime < FullTime) {
+		// --- 更新当前位移（竖直定位轮变化量）---
+		float curAngle = static_cast<float>(
+			horizontalEncoder.getAngle().convert(deg));
+		float deltaAngle = curAngle - startAngle;        // 编码器角度变化
+		float curDist = deltaAngle / 360.0f * kWheelCircumference; // 转为英寸
+		walkDistDisplay = curDist;  // 供屏幕显示实时位移
+
+		// --- 误差计算 ---
+		// Target > 0 前进，Target < 0 后退
+		// curDist 前进时为正（编码器正转），后退时为负
+		err = Target - curDist;
+
+		// --- 分段积分（误差绝对值小于目标 10% 时积分，防止 windup）---
+		if (fabs(err) < absTarget * 0.1f) {
+			accErr += err;
+		}
+
+		// --- PID 输出 ---
+		out = pid.output(err, lastErr, accErr);
+
+		// --- 软启动斜坡 ---
+		uint32_t elapsed = pros::millis() - startTime;
+		if (elapsed < kRampTimeMs) {
+			out *= (elapsed / static_cast<float>(kRampTimeMs)) * kRampStart;
+		}
+
+		// --- 功率限幅 ---
+		if (fabs(out) > Power) {
+			out = (Target > 0) ? Power : -Power;
+		}
+
+		// --- 静摩擦补偿：编码器不动 + PID 还要推 + 没到位 → 堵转，加力 ---
+		float encDelta = fabs(curAngle - lastEncAngle);
+		bool isStuck = (encDelta < kStictionDegPerTick);
+		if (isStuck && fabs(out) > 0.001f && fabs(out) < kMinPower && fabs(err) > 0.3f) {
+			out = (out > 0) ? kMinPower : -kMinPower;
+		}
+
+		// --- 驱动底盘 ---
+		left_motors.move(out);
+		right_motors.move(out);
+
+		// --- 退出条件：到位（误差 < 0.3 inch ≈ 7.6mm）---
+		if (fabs(err) < 0.3f) {
+
+			break;
+		}
+
+		// --- 更新 ---
+		lastErr = err;
+		lastEncAngle = curAngle;
+		pros::delay(10);
+	}
+
+	// 刹车
+
+	left_motors.brake();
+	right_motors.brake();
+}
+
+// ============================================================
+// GoForWardCurve — 功率-距离曲线前进/后退（摩擦不敏感版，无 PID）
+// ============================================================
+void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) {
+	// 竖直定位轮：horizontalEncoder 测量前进/后退（端口见 sensor.cpp）
+	// 轮径 2 英寸，周长 = π × 2 ≈ 6.283 in
+	constexpr float kWheelCircumference = 6.2831853f; // 2_in * π
+	// 保底功率：实测该场地“刚能起动”的功率，摩擦大调高
+	constexpr float kBreakawayPower = 0.15f;
+	constexpr uint32_t kRampTimeMs = 100;  // 软启动斜坡时长（毫秒），减少起步打滑
+
+	walkTargetDisplay = Target;  // 供屏幕显示当前段目标
+
+	// 记录起始编码器角度（度），不复位，不干扰里程计
+	float startAngle = static_cast<float>(horizontalEncoder.getAngle().convert(deg));
+	uint32_t startTime = pros::millis();
+
+	// 运动中用 BRAKE 模式，到位后 brake() 有阻力不会溜车
+	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+	right_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+
+	const float dir       = (Target > 0) ? 1.0f : -1.0f;
+	const float decel     = fabs(DecelDist); // 减速区长度（英寸）
+
+	while (pros::millis() - startTime < FullTime) {
+		// --- 更新当前位移（竖直定位轮变化量）---
+		float curAngle = static_cast<float>(horizontalEncoder.getAngle().convert(deg));
+		float curDist  = (curAngle - startAngle) / 360.0f * kWheelCircumference;
+		walkDistDisplay = curDist;  // 供屏幕显示实时位移
+
+		// --- 剩余距离 ---
+		float absErr = fabs(Target - curDist);
+
+		// --- 到位：直接刹停 ---
+		if (absErr < 0.3f) {
+			break;
+		}
+
+		// --- 功率-距离曲线 ---
+		float out;
+		if (absErr > decel) {
+			out = dir * Power;  // 巡航段：满功率
+		} else {
+			// 减速段：按剩余距离线性降功率，但保留保底功率克服静摩擦
+			out = dir * (Power * (absErr / decel));
+			if (fabs(out) < kBreakawayPower) out = dir * kBreakawayPower;
+		}
+
+		// --- 软启动斜坡（前 kRampTimeMs 从 0 线性升到目标功率）---
+		uint32_t elapsed = pros::millis() - startTime;
+		if (elapsed < kRampTimeMs) {
+			out *= (elapsed / static_cast<float>(kRampTimeMs));
+		}
+
+		// --- 驱动底盘 ---
+		left_motors.move(out);
+		right_motors.move(out);
+
+		pros::delay(10);
+	}
+
+	// 刹车
+	left_motors.brake();
+	right_motors.brake();
 }

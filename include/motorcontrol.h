@@ -61,7 +61,7 @@ void LiftUpDegree(float Power,float Target,float Fulltime);
  * @brief 升降机构 PID 定位（非阻塞，需每帧调用）
  * @param targetDeg 目标角度（度），自动归一化到 [0,360) 并钳位到可达范围
  *
- * 单组 PID（kP=3.5 kD=10），带目标切换检测、积分抗饱和、
+ * 单组 PID（kP=2.5 kD=10），带目标切换检测、积分抗饱和、
  * 最小输出保底（远端≥15）和到位 HOLD 死区。
  * 适用于 autonomous() 和 opcontrol() 中的自动定位。
  */
@@ -135,19 +135,27 @@ void Claw_control_time(int BtnPressed);
 
 
 /**
- * @brief 爪子开闭控制（单次全功率 + 保持）
- * ClawOpen() → 全功率打开 200ms → HOLD 刹车
- * ClawClose() → 全功率关闭 200ms → 低功率保持
+ * @brief 爪子开闭控制（计时器 + 满功率脉冲 + HOLD 锁死）
+ * ClawOpen() → 满功率正转(开) 250ms → HOLD 刹车
+ * ClawClose() → 满功率反转(关) 250ms → COAST 刹车
+ * ClawOpenSimple() → 满功率正转(开)
+ * ClawCloseSimple() → COAST 刹车(关)
+ * 通过共享文件作用域静态变量实现状态切换检测，每次目标切换时重置计时器。
  */
 void ClawOpen();
 void ClawClose();
+void ClawOpenSimple();
+void ClawCloseSimple();
 
+
+void ClawIntake();
+void ClawOuttake();
 
 /**
  * @brief 爪子控制_气动
  * @param BtnPressed 按键按下状态
  */
-void ClawControl(bool BtnPressed);
+void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed);
 
 /**
  * @brief 俯仰轴旋转（目标驱动，非阻塞）
@@ -176,6 +184,15 @@ void Claw_Turn0();
  * 两侧均有物理限位，通过编码器堵转检测判定到位并 HOLD 刹停。
  */
 void Claw_Return180(int btn);
+
+/**
+ * @brief   夹爪滚转轴旋转控制（计时版，非阻塞状态机）
+ * @param btn 按键原始状态 (1=按下, 0=松开)
+ *
+ * 状态机：每次按键上升沿在 0° 和 180° 之间切换。
+ * 取消堵转检测，改为 500ms 全功率 + 400mV 小电压保持。
+ */
+void Claw_Return180_time(int btn);
 
 
 
@@ -217,7 +234,57 @@ void drive(int dir, int turn);
 
 
 
+// ============================================================
+// 底盘自动运动函数
+// ============================================================
+
 /**
+ * @brief 前进/后退函数（竖直定位轮 + PID 闭环控制）
+ * @param Power    最大功率绝对值 [0, 1.0]，方向由 Target 符号决定
+ * @param Target   目标距离（英寸），正=前进，负=后退
+ * @param FullTime 超时时间（毫秒），到时强制刹车退出
+ * @param pid      PID 参数（使用 LiftPID 结构体）
+ *
+ * 读取竖直定位轮（horizontalEncoder）的编码器角度变化量，
+ * 经轮径换算为英寸作为当前位置反馈，与目标距离比较得到误差，
+ * 由 PID 计算输出功率驱动底盘。
+ * 包含：软启动斜坡（前 300ms）、分段积分抗饱和、功率限幅、
+ * 到位误差退出（< 0.3 in）和超时保护。
+ *
+ * 注意：此函数为阻塞式，仅用于 autonomous() 中，
+ * 不得在 opcontrol() 循环内调用。
+ */
+void GoForWard(float Power, float Target, float FullTime, const LiftPID& pid);
+
+/**
+ * @brief 获取 GoForWard 实时已走距离（英寸，负=后退）
+ * 供 autonomous 屏幕调试显示，非阻塞，可随时读取。
+ */
+float GetWalkDist();
+
+/**
+ * @brief 获取当前 GoForWard 的目标距离（英寸）
+ */
+float GetWalkTarget();
+
+/**
+ * @brief 功率-距离曲线前进/后退（摩擦不敏感版，无 PID）
+ * @param Power     最大功率绝对值 [0, 1.0]，方向由 Target 符号决定
+ * @param Target    目标距离（英寸），正=前进，负=后退
+ * @param FullTime  超时时间（毫秒），到时强制刹车退出
+ * @param DecelDist 减速区长度（英寸）：剩余距离小于该值时按比例线性降功率
+ *
+ * 读取竖直定位轮（horizontalEncoder）编码器角度，换算为英寸作为位置反馈；
+ * 剩余距离 > DecelDist 时满功率巡航，进入减速区后按 剩余距离/DecelDist
+ * 线性降功率，并在低功率段保留保底功率克服静摩擦。
+ * 不含 PID，摩擦敏感性远低于 GoForWard。
+ *
+ * 注意：此函数为阻塞式，仅用于 autonomous() 中，
+ * 不得在 opcontrol() 循环内调用。
+ */
+void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist);
+
+/*
  * @brief LemLib 里程计初始化（IMU 校准 + 定位轮启动）
  * 在 initialize() 中调用
  */

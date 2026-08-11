@@ -32,6 +32,8 @@ void initialize() {
 	pros::lcd::register_btn1_cb(on_center_button);
 	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
+
+
 	lemLibInit(); // 初始化 LemLib（IMU 校准 + 里程计启动）
 }
 
@@ -81,80 +83,81 @@ void autonomous() {
  */
 void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	
+	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
+	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
+//	left_motors.move(0);
+//	right_motors.move(0);
+	// 重置升降和夹爪水机状态，清除 autonomous 残留
+	lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	Claw_return.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	//lift1.move(0);
+	//lift2.move(0);
+//	Claw.move(0);
+//	Claw_Rot.move(0);
+//	Claw_return.move(0);
 
 
 	while (true) {
-		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
-
-		// === 读取所有按键 ===
 		int dir   = master.get_analog(ANALOG_LEFT_Y);
 		int turn  = master.get_analog(ANALOG_LEFT_X);
-		int chR_Y = master.get_analog(ANALOG_RIGHT_Y);   // 右Y：手动升降
-		int chR_X = master.get_analog(ANALOG_RIGHT_X);   // 右X：tuggle 气缸
-
-		int BtnA = master.get_digital(DIGITAL_A);
-		int BtnX = master.get_digital(DIGITAL_X);
-		int BtnB = master.get_digital(DIGITAL_B);
+		int chR_Y = master.get_analog(ANALOG_RIGHT_Y);
+		int chR_X = master.get_analog(ANALOG_RIGHT_X);
 		int BtnL1 = master.get_digital(DIGITAL_L1);
 		int BtnL2 = master.get_digital(DIGITAL_L2);
 		int BtnR1 = master.get_digital(DIGITAL_R1);
 		int BtnR2 = master.get_digital(DIGITAL_R2);
+		int BtnA = master.get_digital(DIGITAL_A);
+		int BtnX = master.get_digital(DIGITAL_X);
+		int BtnB  = master.get_digital(DIGITAL_B);
 		int BtnY  = master.get_digital(DIGITAL_Y);
 
-		// === 底盘（始终可用）===
 		drive(dir, turn);
 
-		// === tuggle 气缸 + 手动升降互斥（同一摇杆，X/tuggle vs Y/升降）===
+
 		int absX = abs(chR_X);
 		int absY = abs(chR_Y);
 		constexpr int kStickDead = 70;
-
-		// X 轴主导 → tuggle 激活，同时抑制升降输入
 		bool tuggleActive = (absX > kStickDead && absX >= absY);
 		Piston_tuggle.set_value(tuggleActive);
-
-		// === 半自动宏 ===
-		// TODO: 滚转轴 Claw_Return180 后续统一剥离边沿检测为 claw_return(bool)
-		static bool clawAt90 = false;  // 俯仰轴目标：false=0°, true=90°
+		Piston_tuggle2.set_value(tuggleActive);
+/*
+		// 半自动宏
+		static bool clawAt90 = false;
 		static bool aWasActive = false;
 		bool aActive = a_macro(BtnA, clawAt90);
-		if (aWasActive && !aActive) { clawAt90 = true; }   // A宏结束→夹子转出90°
+		if (aWasActive && !aActive) { clawAt90 = true; }
 		aWasActive = aActive;
 
 		static bool xWasActive = false;
 		bool xActive = x_macro(BtnX);
-		if (xWasActive && !xActive) { clawAt90 = false; }  // X宏结束→夹子归0°
+		if (xWasActive && !xActive) { clawAt90 = false; }
 		xWasActive = xActive;
+*/
+		bool anyMacro = 0;
 
-		bool anyMacro = aActive || xActive;
-
-		// === 升降控制（始终调用，内部处理死区和软刹车）===
+		// 升降（tuggle 激活时抑制升降输入，宏激活时由宏内部控制）
 		if (!anyMacro) {
-			if (BtnR1) {
-				lift_go(330);
-			} else {
-				// tuggle 激活时传 0 抑制升降，防止 X/Y 斜向同时触发
-				Lift_simple(tuggleActive ? 0 : chR_Y);
-			}
+			Lift_simple(tuggleActive ? 0 : chR_Y);
 		}
-		// 宏激活时由 a_macro / x_macro 内部控制升降
 
-		// === 气动爪子（L1 toggle，宏激活时跳过）===
+		// 爪子（宏激活时跳过）
 		if (!anyMacro) {
-			static bool clawOpen  = true;   // true=打开, false=夹紧
-			static bool l1Prev    = false;
+			static bool clawOpen = false;  // 默认关闭
+			static bool l1Prev   = false;
 			bool l1Rising = (!l1Prev && BtnL1);
 			l1Prev = BtnL1;
 			if (l1Rising) clawOpen = !clawOpen;
-
-			if (clawOpen) ClawOpen();
-			else          ClawClose();
+			if (clawOpen) ClawOpenSimple();
+			else          ClawCloseSimple();
 		}
 
-		// === 俯仰轴旋转（B toggle，宏激活时跳过）===
+		//爪子Intake
+		ClawControl(BtnR1, BtnY, BtnL1);
+/*
+		// 俯仰轴旋转（宏激活时跳过）
 		if (!anyMacro) {
 			static bool bPrev = false;
 			bool bRising = (!bPrev && BtnB);
@@ -163,26 +166,14 @@ void opcontrol() {
 			turn_claw(clawAt90);
 		}
 
-		// === 滚转轴（L2，内部边沿检测，不动）===
-		Claw_Return180(BtnL2);
+		// 滚转轴（L2，不受宏影响）
+		Claw_Return180_time(BtnL2);
 
-		// === 吸球控制（宏激活时跳过）===
+		// 吸球（宏激活时跳过）
 		if (!anyMacro) {
-			if (BtnR1) {
-				IntakeFront.move(100);
-				IntakeBack.move(100);
-			} else if (BtnR2) {
-				IntakeFront.move(100);
-				IntakeBack.move(0);
-			} else if (BtnY) {
-				IntakeFront.move(-100);
-				IntakeBack.move(-100);
-			} else {
-				IntakeFront.move(0);
-				IntakeBack.move(0);
-			}
+			IntakeControl(BtnR1, BtnR2, BtnY);
 		}
-
+*/
 		pros::delay(20);
 	}
 }

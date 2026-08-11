@@ -83,6 +83,12 @@ lemlib::V5InertialSensor imu(15);
 
 若实际机器人接线或端口映射与当前代码不同，停止并索要验证过的端口映射表，不要猜测端口号或传感器类型。
 
+### 已知硬件事实（记忆）
+
+- **`horizontalEncoder` 其实是竖直定位轮**：LemLib 定位硬件中唯一实际存在的物理追踪轮，测量前进/后退（`GoForWard` 也只用它做闭环）。端口见 `src/sensor.cpp`。
+- **`verticalEncoder` 没有对应物理设备**：仅为代码中保留的对象，无实际追踪轮。
+- **所有端口 21 的设备对象均为废弃对象**：`Claw_Rot`、`Claw_return`、`ClawRotation`、`IntakeFront`、`IntakeBack` 已废弃，不要使用、不要依赖其行为。
+
 ### 优化级别
 `-Os`（体积优化），ARM Cortex-A9 + NEON FPU + hard float ABI。
 
