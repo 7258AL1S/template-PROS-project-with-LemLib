@@ -1177,17 +1177,13 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 // TurnCurve — IMU 航向功率-角度曲线转向（无 PID，摩擦不敏感版）
 // ============================================================
 void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
-	// 读取 IMU 当前航向角（度）作为反馈（端口见 sensor.cpp）
-	float startAngle = static_cast<float>(imu.getRotation().convert(deg));
+	// 相对转角：以进入函数时的航向为基准（与 GoForWardCurve 的"从起点算距离"语义一致），正=逆时针
+	const float startAngle = static_cast<float>(imu.getRotation().convert(deg));
+	const float target = startAngle + Target;
 
-	// 目标角归一化到 [0, 360)
-	float target = std::fmod(Target, 360.0f);
-	if (target < 0.0f) target += 360.0f;
-
-	// 起始误差环绕到 [-180, 180]，取最短路径
-	float err = target - startAngle;
-	if (err > 180.0f)  err -= 360.0f;
-	if (err < -180.0f) err += 360.0f;
+	// 转向方向系数：+1 = 左负右正（与 LemLib turnTo 一致，正角速度=逆时针）
+	// 若实测转向方向反了，把这里改成 -1.0f 即可
+	constexpr float kTurnSign = 1.0f;
 
 	// 保底功率：实测"刚好能转动"的功率，摩擦力大调高
 	constexpr float kBreakawayPower = 0.15f;
@@ -1197,6 +1193,10 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 	const float decel = (fabs(DecelDeg) > 0.0f) ? fabs(DecelDeg) : 1.0f;
 
 	uint32_t startTime = pros::millis();
+	uint32_t lastPrint = 0;
+
+	// 调试输出：入口航向（度）
+	pros::lcd::print(5, "start:%.1f", startAngle);
 
 	// 转向过程中用 BRAKE 模式，到位后 brake() 有阻力不会滑过
 	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
@@ -1211,11 +1211,6 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 		float absErr = fabs(e);
 		// 方向按当前误差实时决定：过冲后自动反向回正
 		const float dir = (e >= 0.0f) ? 1.0f : -1.0f;
-
-		// 到位：误差 < 0.5° 直接刹停
-		if (absErr < 0.5f) {
-			break;
-		}
 
 		// 功率-角度曲线
 		float out;
@@ -1233,9 +1228,20 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 			out *= (elapsed / static_cast<float>(kRampTimeMs));
 		}
 
+		// 调试输出：每 100ms 刷新一次，观察 IMU 航向/误差/输出功率
+		if (pros::millis() - lastPrint >= 100) {
+			pros::lcd::print(5, "c:%.0f e:%.0f o:%.2f", cur, e, out);
+			lastPrint = pros::millis();
+		}
+
+		// 到位：误差 < 0.5° 直接刹停
+		if (absErr < 0.5f) {
+			break;
+		}
+
 		// 转向：左右轮反向（与 LemLib turnTo 一致：正角速度=逆时针=左负右正）
-		left_motors.move(-out);
-		right_motors.move(out);
+		left_motors.move(kTurnSign * -out);
+		right_motors.move(kTurnSign * out);
 
 		pros::delay(10);
 	}
