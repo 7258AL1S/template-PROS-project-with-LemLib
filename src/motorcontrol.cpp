@@ -718,6 +718,28 @@ void PickControl(bool tuggleActive){
 	}
 }
 
+void TugglePistonControl(bool BtnA){
+	static bool pistonActive = false;  // 气缸状态：false=收, true=伸
+	static bool prevA        = false;  // 上一帧 A 键状态（上升沿检测）
+
+	// 上升沿：按下瞬间切换气缸状态
+	if (!prevA && BtnA) {
+		pistonActive = !pistonActive;
+	}
+	prevA = BtnA;
+
+	Piston_tuggle.set_value(pistonActive);
+	Piston_tuggle2.set_value(pistonActive);
+}
+
+void TuggleMotorControl(bool BtnX){
+	if (BtnX) {
+		TugglePick.move(-127);  // X 按住：满功率（方向与 PickControl 一致）
+	} else {
+		TugglePick.move(0);     // 松开：停止
+	}
+}
+
 void Claw_Turn(int btn){
 	static bool     toggled   = false;
 	static int      prevBtn   = 0;

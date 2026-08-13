@@ -104,7 +104,6 @@ void opcontrol() {
 		int dir   = master.get_analog(ANALOG_LEFT_Y);
 		int turn  = master.get_analog(ANALOG_LEFT_X);
 		int chR_Y = master.get_analog(ANALOG_RIGHT_Y);
-		int chR_X = master.get_analog(ANALOG_RIGHT_X);
 		int BtnL1 = master.get_digital(DIGITAL_L1);
 		int BtnL2 = master.get_digital(DIGITAL_L2);
 		int BtnR1 = master.get_digital(DIGITAL_R1);
@@ -117,13 +116,8 @@ void opcontrol() {
 		drive(dir, turn);
 
 
-		int absX = abs(chR_X);
-		int absY = abs(chR_Y);
-		constexpr int kStickDead = 70;
-		bool tuggleActive = (absX > kStickDead && absX >= absY);
-		Piston_tuggle.set_value(tuggleActive);
-		Piston_tuggle2.set_value(tuggleActive);
-		PickControl(tuggleActive);//电机控制翻tuggle拨片
+		TugglePistonControl(BtnA);   // A 键切换拨片气缸
+		TuggleMotorControl(BtnX);    // X 键按住驱动拨片电机
 /*
 		// 半自动宏
 		static bool clawAt90 = false;
