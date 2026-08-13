@@ -1172,3 +1172,75 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 	left_motors.brake();
 	right_motors.brake();
 }
+
+// ============================================================
+// TurnCurve — IMU 航向功率-角度曲线转向（无 PID，摩擦不敏感版）
+// ============================================================
+void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
+	// 读取 IMU 当前航向角（度）作为反馈（端口见 sensor.cpp）
+	float startAngle = static_cast<float>(imu.getRotation().convert(deg));
+
+	// 目标角归一化到 [0, 360)
+	float target = std::fmod(Target, 360.0f);
+	if (target < 0.0f) target += 360.0f;
+
+	// 起始误差环绕到 [-180, 180]，取最短路径
+	float err = target - startAngle;
+	if (err > 180.0f)  err -= 360.0f;
+	if (err < -180.0f) err += 360.0f;
+
+	// 保底功率：实测"刚好能转动"的功率，摩擦力大调高
+	constexpr float kBreakawayPower = 0.15f;
+	constexpr uint32_t kRampTimeMs = 100;  // 软启动斜坡时长（毫秒），减少起步打滑
+
+	// 减速区角度（度），防 0 值除零
+	const float decel = (fabs(DecelDeg) > 0.0f) ? fabs(DecelDeg) : 1.0f;
+
+	uint32_t startTime = pros::millis();
+
+	// 转向过程中用 BRAKE 模式，到位后 brake() 有阻力不会滑过
+	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+	right_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+
+	while (pros::millis() - startTime < FullTime) {
+		// 当前航向角 + 环绕误差（0/359 取最短路径）
+		float cur = static_cast<float>(imu.getRotation().convert(deg));
+		float e = target - cur;
+		if (e > 180.0f)  e -= 360.0f;
+		if (e < -180.0f) e += 360.0f;
+		float absErr = fabs(e);
+		// 方向按当前误差实时决定：过冲后自动反向回正
+		const float dir = (e >= 0.0f) ? 1.0f : -1.0f;
+
+		// 到位：误差 < 0.5° 直接刹停
+		if (absErr < 0.5f) {
+			break;
+		}
+
+		// 功率-角度曲线
+		float out;
+		if (absErr > decel) {
+			out = dir * Power;  // 巡航段：满功率
+		} else {
+			// 减速段：按剩余角度线性降功率，但保留保底功率克服静摩擦
+			out = dir * (Power * (absErr / decel));
+			if (fabs(out) < kBreakawayPower) out = dir * kBreakawayPower;
+		}
+
+		// 软启动斜坡（前 kRampTimeMs 从 0 线性升到目标功率）
+		uint32_t elapsed = pros::millis() - startTime;
+		if (elapsed < kRampTimeMs) {
+			out *= (elapsed / static_cast<float>(kRampTimeMs));
+		}
+
+		// 转向：左右轮反向
+		left_motors.move(out);
+		right_motors.move(-out);
+
+		pros::delay(10);
+	}
+
+	// 刹停
+	left_motors.brake();
+	right_motors.brake();
+}

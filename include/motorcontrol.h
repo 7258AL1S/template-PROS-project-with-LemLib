@@ -295,6 +295,22 @@ float GetWalkTarget();
  */
 void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist);
 
+/**
+ * @brief 功率-角度曲线转向（IMU 航向反馈，无 PID，摩擦不敏感版）
+ * @param Power    最大功率绝对值 [0, 1.0]，方向自动取最短路径
+ * @param Target   目标航向角（度），自动归一化到 [0, 360)
+ * @param FullTime 超时时间（毫秒），到时强制刹车退出
+ * @param DecelDeg 减速区角度（度）：剩余误差小于该值时按比例线性降功率
+ *
+ * 读取 IMU 航向角（imu.getRotation）作为反馈；剩余误差 > DecelDeg 时满功率
+ * 巡航，进入减速区后按 剩余误差/DecelDeg 线性降功率，并保留保底功率克服
+ * 静摩擦。不含 PID；方向按当前误差实时决定，过冲后可自行回正。
+ *
+ * 注意：此函数为阻塞式，仅用于 autonomous() 中，
+ * 不得在 opcontrol() 循环内调用。
+ */
+void TurnCurve(float Power, float Target, float FullTime, float DecelDeg);
+
 /*
  * @brief LemLib 里程计初始化（IMU 校准 + 定位轮启动）
  * 在 initialize() 中调用
