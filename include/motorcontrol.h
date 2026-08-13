@@ -169,12 +169,6 @@ void PickControl(bool tuggleActive);
 void TugglePistonControl(bool BtnA);
 
 /**
- * @brief 拨片电机控制（X 键按住满功率，松开停止）
- * @param BtnX X 键按下状态
- */
-void TuggleMotorControl(bool BtnX);
-
-/**
  * @brief 俯仰轴旋转（目标驱动，非阻塞）
  * @param target true=90°位置, false=0°位置
  *

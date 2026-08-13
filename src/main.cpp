@@ -117,7 +117,7 @@ void opcontrol() {
 
 
 		TugglePistonControl(BtnA);   // A 键切换拨片气缸
-		TuggleMotorControl(BtnX);    // X 键按住驱动拨片电机
+		PickControl(BtnX);    // X 键按住驱动拨片电机
 /*
 		// 半自动宏
 		static bool clawAt90 = false;

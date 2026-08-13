@@ -711,7 +711,7 @@ void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed){
 void PickControl(bool tuggleActive){
 	
 	if(tuggleActive){
-		TugglePick.move(-127);
+		TugglePick.move(127);
 	}
 	else{
 		TugglePick.move(0);
@@ -732,13 +732,7 @@ void TugglePistonControl(bool BtnA){
 	Piston_tuggle2.set_value(pistonActive);
 }
 
-void TuggleMotorControl(bool BtnX){
-	if (BtnX) {
-		TugglePick.move(-127);  // X 按住：满功率（方向与 PickControl 一致）
-	} else {
-		TugglePick.move(0);     // 松开：停止
-	}
-}
+
 
 void Claw_Turn(int btn){
 	static bool     toggled   = false;
