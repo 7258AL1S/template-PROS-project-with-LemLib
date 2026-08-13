@@ -64,6 +64,7 @@ E:\conda\envs\pytorch\python.exe tools\turn_power_curve.py 1.32 0.0 0.1
 - `--max-omega`：内部推进航向的最大角速度，单位 deg/s，默认 `360`
 - `--exit-range`：退出误差阈值，单位度，默认 `2`
 - `--exit-time`：误差在阈值内持续多久退出，单位毫秒，默认 `250`
+- `--early-exit-range`：minSpeed 非零时的提前退出误差阈值，单位度，默认 `0`
 - `--windup-range`：PID 积分清零误差范围，默认 `0`
 - `--sign-flip-reset`：误差变号时是否清零积分，默认 `false`
 - `--save`：保存 PNG 的路径，可选
