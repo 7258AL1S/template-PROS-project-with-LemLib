@@ -101,7 +101,8 @@ void auto1() {
     pros::delay(100);
     liftCmd = {60, 330, 550};
     liftGo = true;
-    TurnCurve(1.0, 90.0, 800, 15.0);  
+    //TurnCurve(1.0, 90.0, 800, 15.0);  
+    lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
     return;
 
 

@@ -1183,7 +1183,7 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 
 	// 转向方向系数：+1 = 左负右正（与 LemLib turnTo 一致，正角速度=逆时针）
 	// 若实测转向方向反了，把这里改成 -1.0f 即可
-	constexpr float kTurnSign = 1.0f;
+	constexpr float kTurnSign = -1.0f;
 
 	// 保底功率：实测"刚好能转动"的功率，摩擦力大调高
 	constexpr float kBreakawayPower = 0.15f;
@@ -1228,9 +1228,9 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 			out *= (elapsed / static_cast<float>(kRampTimeMs));
 		}
 
-		// 调试输出：每 100ms 刷新一次，观察 IMU 航向/误差/输出功率
+		// 调试输出：每 100ms 刷新一次，显示误差与陀螺仪（IMU 航向）
 		if (pros::millis() - lastPrint >= 100) {
-			pros::lcd::print(5, "c:%.0f e:%.0f o:%.2f", cur, e, out);
+			pros::lcd::print(5, "e:%.0f g:%.1f", e, cur);
 			lastPrint = pros::millis();
 		}
 
