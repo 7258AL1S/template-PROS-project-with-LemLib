@@ -98,10 +98,10 @@ void auto1() {
     GoForWardCurve(1.0,10.3,1000,5.0f);        // 新版：Power, Target, FullTime, DecelDist
 
 
-    
+    pros::delay(100);
     liftCmd = {60, 330, 550};
     liftGo = true;
-    lemlib::turnTo(-90_stDeg, 800_msec, turnParams, turnSettings);
+    TurnCurve(0.8f, 90.0f, 800, 15.0f);  
     return;
 
 
