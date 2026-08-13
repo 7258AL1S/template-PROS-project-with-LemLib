@@ -96,7 +96,7 @@ void auto1() {
     ClawClose();
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(1.0,5.5,1000,4.0f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(1.0,5.5,1000,6.0f);        // 新版：Power, Target, FullTime, DecelDist
 
 
 
@@ -105,13 +105,17 @@ void auto1() {
     //TurnCurve(1.0, 90.0, 800, 15.0);  
     turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,12.2,1000,5.0f); 
+    GoForWardCurve(1.0,12.2,1000,8.0f); 
     LiftUpDegree(-20, 358, 300);
     ClawOpen();
 
-    GoForWardCurve(1.0,-8.0,1000,5.0f);
+    GoForWardCurve(1.0,-8.0,1000,8.0f);
     turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
     lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
+
+    // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
+    autoActive = false;
+    pros::delay(100);
     return;
 
 

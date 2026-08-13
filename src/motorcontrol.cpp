@@ -206,8 +206,9 @@ void Lift(float Power){
 			wasPowered = false;
 		}
 
+		constexpr uint32_t kBrakeMs = 150;  // 松开后先电阻制动 150ms，再转 HOLD 锁死
 		uint32_t elapsed = pros::millis() - zeroStartTime;
-		if (elapsed < 0) {
+		if (elapsed < kBrakeMs) {
 			// 前 150ms：BRAKE 模式（电阻制动，快速减速）
 			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
@@ -1117,6 +1118,7 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 	// 保底功率：实测该场地“刚能起动”的功率，摩擦大调高
 	constexpr float kBreakawayPower = 0.15f;
 	constexpr uint32_t kRampTimeMs = 100;  // 软启动斜坡时长（毫秒），减少起步打滑
+	constexpr float kArrivalDist = 1.0f;   // 到位窗口（英寸）：放宽到 1.0，避免高速下跳过窗口
 
 	walkTargetDisplay = Target;  // 供屏幕显示当前段目标
 
@@ -1137,11 +1139,17 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 		float curDist  = (curAngle - startAngle) / 360.0f * kWheelCircumference;
 		walkDistDisplay = curDist;  // 供屏幕显示实时位移
 
-		// --- 剩余距离 ---
-		float absErr = fabs(Target - curDist);
+		// --- 剩余距离（带符号，用于过冲判断）---
+		float err    = Target - curDist;
+		float absErr = fabs(err);
 
-		// --- 到位：直接刹停 ---
-		if (absErr < 0.3f) {
+		// --- 到位：进入窗口即刹停 ---
+		if (absErr < kArrivalDist) {
+			break;
+		}
+
+		// --- 过冲保护：已越过目标立即刹停，绝不反向加速冲出 ---
+		if ((Target > 0.0f && err < 0.0f) || (Target < 0.0f && err > 0.0f)) {
 			break;
 		}
 

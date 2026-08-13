@@ -289,6 +289,7 @@ float GetWalkTarget();
  * 剩余距离 > DecelDist 时满功率巡航，进入减速区后按 剩余距离/DecelDist
  * 线性降功率，并在低功率段保留保底功率克服静摩擦。
  * 不含 PID，摩擦敏感性远低于 GoForWard。
+ * 到位窗口 1.0in；含过冲保护：误差一旦越过目标立即刹停，不会反向加速冲出。
  *
  * 注意：此函数为阻塞式，仅用于 autonomous() 中，
  * 不得在 opcontrol() 循环内调用。
