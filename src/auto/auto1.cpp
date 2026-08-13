@@ -96,15 +96,22 @@ void auto1() {
     ClawClose();
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(1.0,10.3,1000,5.0f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(1.0,5.5,1000,4.0f);        // 新版：Power, Target, FullTime, DecelDist
 
 
-    pros::delay(100);
-    liftCmd = {60, 330, 550};
+
+    liftCmd = {50, 325, 550};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.32, 0.0, 0.1);
+    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
+    GoForWardCurve(1.0,12.2,1000,5.0f); 
+    LiftUpDegree(-20, 358, 300);
+    ClawOpen();
+
+    GoForWardCurve(1.0,-8.0,1000,5.0f);
+    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
+    lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
     return;
 
 
