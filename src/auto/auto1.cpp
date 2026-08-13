@@ -103,7 +103,7 @@ void auto1() {
     liftCmd = {60, 330, 550};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.0, 0.0, 0.1);
+    turnSettings.angularPID = lemlib::PID(1.32, 0.0, 0.1);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
     return;
 
@@ -115,7 +115,7 @@ void auto1() {
     ClawOpen();
     pros::delay(60);
     GoForWard(1.0,-4.2,1200,pidShort);
-    turnSettings.angularPID = lemlib::PID(1.12, 0.0, 0.06);
+    turnSettings.angularPID = lemlib::PID(1.13, 0.0, 0.06);
     lemlib::turnTo(135_stDeg, 800_msec, turnParams, turnSettings);
     liftCmd = {-80, 359, 600};
     liftGo = true;
