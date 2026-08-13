@@ -1233,9 +1233,9 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 			out *= (elapsed / static_cast<float>(kRampTimeMs));
 		}
 
-		// 转向：左右轮反向
-		left_motors.move(out);
-		right_motors.move(-out);
+		// 转向：左右轮反向（与 LemLib turnTo 一致：正角速度=逆时针=左负右正）
+		left_motors.move(-out);
+		right_motors.move(out);
 
 		pros::delay(10);
 	}
