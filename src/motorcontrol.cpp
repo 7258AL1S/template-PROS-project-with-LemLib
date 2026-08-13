@@ -206,9 +206,8 @@ void Lift(float Power){
 			wasPowered = false;
 		}
 
-		constexpr uint32_t kBrakeMs = 150;  // 松开后先电阻制动 150ms，再转 HOLD 锁死
 		uint32_t elapsed = pros::millis() - zeroStartTime;
-		if (elapsed < kBrakeMs) {
+		if (elapsed < 0) {
 			// 前 150ms：BRAKE 模式（电阻制动，快速减速）
 			lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 			lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
