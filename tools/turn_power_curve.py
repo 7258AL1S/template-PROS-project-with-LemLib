@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import argparse
 import math
+import sys
+import tkinter as tk
+from tkinter import ttk
 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 
@@ -262,14 +267,165 @@ def plot_power_curve(
     if args.save:
         fig.savefig(args.save, dpi=150)
         print(f"Saved plot to {args.save}")
-    plt.show()
+        plt.close(fig)
+    else:
+        plt.show()
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    validate_args(args, parser)
+class TurnPowerGui:
+    """Tkinter GUI for editing the main turnTo inputs and live rendering."""
 
+    FIELD_LABELS = (
+        ("target_deg", "Target angle (deg)"),
+        ("fulltime_ms", "FullTime (ms)"),
+        ("max_speed", "Max power"),
+        ("kp", "kP"),
+        ("ki", "kI"),
+        ("kd", "kD"),
+    )
+
+    DEFAULTS = {
+        "target_deg": "-90",
+        "fulltime_ms": "900",
+        "max_speed": "1",
+        "kp": "1.32",
+        "ki": "0",
+        "kd": "0.1",
+    }
+
+    def __init__(self, root: tk.Tk) -> None:
+        self.root = root
+        self.vars = {key: tk.StringVar(value=value) for key, value in self.DEFAULTS.items()}
+        self.render_after_id: str | None = None
+
+        root.title("turnTo motor power curve")
+        root.geometry("900x650")
+
+        self.fig = Figure(figsize=(8, 4.5), dpi=100)
+        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=root)
+
+        self._build_controls()
+        self._build_canvas()
+        self._build_status()
+
+        for var in self.vars.values():
+            var.trace_add("write", self._schedule_render)
+
+        self._render()
+
+    def _build_controls(self) -> None:
+        controls = ttk.LabelFrame(self.root, text="Inputs")
+        controls.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
+
+        ttk.Label(controls, text="Initial angle: 0 deg (fixed)").grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=6, pady=(6, 2)
+        )
+
+        for index, (key, label) in enumerate(self.FIELD_LABELS, start=1):
+            ttk.Label(controls, text=label).grid(
+                row=index, column=0, sticky="w", padx=6, pady=3
+            )
+            ttk.Entry(controls, textvariable=self.vars[key], width=14).grid(
+                row=index, column=1, sticky="w", padx=6, pady=3
+            )
+
+    def _build_canvas(self) -> None:
+        self.canvas.get_tk_widget().grid(
+            row=0, column=1, rowspan=2, padx=10, pady=10, sticky="nsew"
+        )
+        self.root.columnconfigure(1, weight=1)
+        self.root.rowconfigure(0, weight=1)
+
+    def _build_status(self) -> None:
+        self.status_var = tk.StringVar(value="Ready")
+        ttk.Label(self.root, textvariable=self.status_var, foreground="gray").grid(
+            row=2, column=0, columnspan=2, sticky="w", padx=10, pady=(0, 8)
+        )
+
+    def _schedule_render(self, *_args: object) -> None:
+        if self.render_after_id is not None:
+            self.root.after_cancel(self.render_after_id)
+        self.render_after_id = self.root.after(150, self._render)
+
+    def _read_values(self) -> dict[str, float]:
+        values: dict[str, float] = {}
+        for key in self.DEFAULTS:
+            raw = self.vars[key].get().strip()
+            if raw == "":
+                raise ValueError(f"{key} is empty")
+            values[key] = float(raw)
+
+        if not math.isfinite(values["target_deg"]):
+            raise ValueError("target angle must be finite")
+        if values["fulltime_ms"] <= 0:
+            raise ValueError("FullTime must be positive")
+        if not 0 <= values["max_speed"] <= 1:
+            raise ValueError("Max power must be between 0 and 1")
+        for key in ("kp", "ki", "kd"):
+            if not math.isfinite(values[key]):
+                raise ValueError(f"{key} must be finite")
+        return values
+
+    def _render(self) -> None:
+        self.render_after_id = None
+        try:
+            values = self._read_values()
+        except ValueError as exc:
+            self.status_var.set(f"Invalid input: {exc}")
+            return
+
+        times_ms, powers = simulate_turn_power(
+            kp=values["kp"],
+            ki=values["ki"],
+            kd=values["kd"],
+            initial_deg=0.0,
+            target_deg=values["target_deg"],
+            fulltime_ms=values["fulltime_ms"],
+            max_speed=values["max_speed"],
+        )
+
+        self.ax.clear()
+        self.ax.plot(times_ms, powers, label="motorPower", linewidth=2)
+        self.ax.axhline(0.0, color="gray", linewidth=0.8)
+        self.ax.set_xlabel("Time (ms)")
+        self.ax.set_ylabel("Motor power")
+        self.ax.set_title(
+            f"turnTo motor power: kP={values['kp']}, kI={values['ki']}, kD={values['kd']}\n"
+            f"target={values['target_deg']} deg, FullTime={values['fulltime_ms']} ms"
+        )
+        self.ax.grid(True)
+
+        peak = max(powers)
+        trough = min(powers)
+        peak_index = powers.index(peak)
+        trough_index = powers.index(trough)
+        self.ax.annotate(
+            f"peak {peak:.3f}",
+            xy=(times_ms[peak_index], peak),
+            xytext=(times_ms[peak_index] + 25, peak + 0.08),
+            arrowprops={"arrowstyle": "->"},
+        )
+        self.ax.annotate(
+            f"trough {trough:.3f}",
+            xy=(times_ms[trough_index], trough),
+            xytext=(times_ms[trough_index] + 25, trough - 0.08),
+            arrowprops={"arrowstyle": "->"},
+        )
+        self.ax.legend()
+        self.canvas.draw_idle()
+
+        self.status_var.set("Rendered")
+
+
+def run_gui() -> int:
+    root = tk.Tk()
+    TurnPowerGui(root)
+    root.mainloop()
+    return 0
+
+
+def run_cli(args: argparse.Namespace) -> int:
     times_ms, powers = simulate_turn_power(
         kp=args.kp,
         ki=args.ki,
@@ -292,5 +448,25 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = []
+
+    if "--cli" in argv:
+        cli_argv = [arg for arg in argv if arg != "--cli"]
+        parser = build_parser()
+        args = parser.parse_args(cli_argv)
+        validate_args(args, parser)
+        return run_cli(args)
+
+    if len(argv) == 0:
+        return run_gui()
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    validate_args(args, parser)
+    return run_cli(args)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))
