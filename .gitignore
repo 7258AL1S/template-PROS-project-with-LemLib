@@ -16,3 +16,5 @@ temp.errors
 *.ini
 .d/
 .worktrees/
+__pycache__/
+*.pyc
