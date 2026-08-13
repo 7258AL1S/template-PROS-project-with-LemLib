@@ -101,7 +101,7 @@ void auto1() {
     pros::delay(100);
     liftCmd = {60, 330, 550};
     liftGo = true;
-    TurnCurve(0.8f, 90.0f, 800, 15.0f);  
+    TurnCurve(1.0, 90.0, 800, 15.0);  
     return;
 
 
