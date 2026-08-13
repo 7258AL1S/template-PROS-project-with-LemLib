@@ -95,6 +95,19 @@ lemlib::V5InertialSensor imu(15);
 - 重构或新增函数完成后，**必须再提交并推送一次**。
 - 提交信息由 Codex 自行撰写（中文，说明改动目的与要点）。
 
+### 函数控制写法偏好（记忆）
+
+- **入参传原始状态，状态全部放在函数内 `static` 变量里**：函数接收按键布尔/摇杆原始值（`BtnPressed`、`joystickValue`），由主循环每帧调用，非阻塞。
+- **上升沿做切换**：统一 `if (prevBtn == 0 && btn == 1)` / `if (!lastBtn && BtnPressed)` 风格，`prev` 存上一帧。
+- **时间控制用 `pros::millis()` 差值 + 命名常量**：`constexpr uint32_t kXxxMs` 写在函数顶部，到点切换功率档位。
+- **刹车模式分层**：运动中 BRAKE、到位 HOLD 锁死、松开 COAST；堵转后用 `move_voltage` 恒定电压顶住限位，避开 `move()` 速度指令触发 V5 内部堵转报警。
+- **堵转检测统一为"编码器增量 + 滞回"**：每 250ms 比较编码器位置，位移 <3° 判定堵转，>8° 才清除（3~8° 保持原状态防抖）。
+- **PID 以 PD 为主**（`kI` 基本为 0）：大误差清积分防 windup；输出钳位 ±100；到位死区 + HOLD；0/359 环绕做误差修正与 D 项保护；保留最低输出克服静摩擦。
+- **分段增益调度**：升降六段式为代表——按 `distFromBottom` 分上/下各 3 段换 PID 参数，上升/下降积分互相清零。
+- **多按键用 else-if 优先级链**，最后 `else` 一律归零或刹车收尾。
+- **阻塞循环只在 autonomous 用**，且注释里写明"仅 autonomous 使用，不得在 opcontrol 循环内调用"。
+- **注释密度高、意图先行**：中文注释解释"为什么"；常量 `kXxx` 命名；参数名统一（`BtnPressed`、`joystickValue`、`Power`、`Target`、`FullTime`）。
+
 ### 优化级别
 `-Os`（体积优化），ARM Cortex-A9 + NEON FPU + hard float ABI。
 

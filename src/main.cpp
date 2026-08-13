@@ -123,7 +123,7 @@ void opcontrol() {
 		bool tuggleActive = (absX > kStickDead && absX >= absY);
 		Piston_tuggle.set_value(tuggleActive);
 		Piston_tuggle2.set_value(tuggleActive);
-		PickControl(tuggleActive);
+		PickControl(tuggleActive);//电机控制翻tuggle拨片
 /*
 		// 半自动宏
 		static bool clawAt90 = false;
@@ -141,7 +141,8 @@ void opcontrol() {
 
 		// 升降（tuggle 激活时抑制升降输入，宏激活时由宏内部控制）
 		if (!anyMacro) {
-			Lift_simple(tuggleActive ? 0 : chR_Y);
+			//Lift_simple(tuggleActive ? 0 : chR_Y);
+			Lift_simple(chR_Y);
 		}
 
 		// 爪子（宏激活时跳过）

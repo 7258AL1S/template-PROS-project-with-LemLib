@@ -8,7 +8,7 @@
 // ============================================================
 // 硬件对象定义（端口根据实际接线修改）
 // ============================================================
-pros::Motor    lift1(-12);         // 左侧升降电机
+pros::Motor    lift1(-13);         // 左侧升降电机
 pros::Motor    lift2(11);         // 右侧升降电机
 pros::Rotation liftRotation(9);   // 升降编码器（V5 旋转传感器）
 
@@ -26,7 +26,7 @@ pros::Rotation ClawRotation(-21);  // 爪子编码器
 pros::Motor    Claw_Left(8);         // 爪子左旋转电机
 pros::Motor    Claw_Right(6);         // 爪子右旋转电机
 
-pros::Motor    TugglePick(-21);  // tuggle拨片
+pros::Motor    TugglePick(-14);  // tuggle拨片
 
 //Intake
 pros::Motor    IntakeFront(-21);  // 吸球电机前
