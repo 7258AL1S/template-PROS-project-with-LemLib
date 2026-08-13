@@ -168,7 +168,7 @@ void PickControl(bool tuggleActive);
  */
 void TugglePistonControl(bool BtnA);
 
-/**
+/*
  * @brief 俯仰轴旋转（目标驱动，非阻塞）
  * @param target true=90°位置, false=0°位置
  *

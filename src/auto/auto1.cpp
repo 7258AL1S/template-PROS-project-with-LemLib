@@ -73,8 +73,10 @@ void auto1() {
     Claw_return.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     Claw_return.brake();
 
-
-
+    TugglePick.move(127);
+    pros::delay(500);
+    TugglePick.move(0);
+    
 
    // left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
    // right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
@@ -89,28 +91,20 @@ void auto1() {
     lemlib::MoveToPointSettings settings;
     lemlib::TurnToParams turnParams;
     lemlib::TurnToSettings turnSettings;
-    Piston_tuggle.set_value(true);
-    pros::delay(100);
-    Piston_tuggle.set_value(false);
-    pros::delay(100);
-    Piston_tuggle.set_value(true);
-    pros::delay(100);
-    Piston_tuggle.set_value(false);
-    pros::delay(100);
+   
     ClawClose();
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(1.0,-10.3,1000,4.0f);        // 新版：Power, Target, FullTime, DecelDist
-    return;
+    GoForWardCurve(1.0,10.3,1000,5.0f);        // 新版：Power, Target, FullTime, DecelDist
 
-    GoForWard(1.0,-29.3,2500,pid);
-    return;
 
     
     liftCmd = {60, 330, 550};
     liftGo = true;
-    lemlib::turnTo(45_stDeg, 800_msec, turnParams, turnSettings);
-    
+    lemlib::turnTo(-90_stDeg, 800_msec, turnParams, turnSettings);
+    return;
+
+
     ClawUP = true;
     clawGo = true;
     GoForWard(1.0,10.5,2000,pid);

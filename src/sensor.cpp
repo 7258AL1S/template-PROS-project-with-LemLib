@@ -37,7 +37,7 @@ pros::Motor    IntakeBack(-21);    // 吸球电机后
 // LemLib 定位硬件 — 请填入实际端口号
 lemlib::V5InertialSensor  imu(16);                  
 lemlib::V5RotationSensor  verticalEncoder(17);      
-lemlib::V5RotationSensor  horizontalEncoder(18);   
+lemlib::V5RotationSensor  horizontalEncoder(-18);   
 
 
 
