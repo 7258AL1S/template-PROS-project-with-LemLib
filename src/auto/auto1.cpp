@@ -64,6 +64,7 @@ void auto1() {
         while (autoActive) {
             pros::lcd::print(3, "Dist: %.1f in", GetWalkDist());
             pros::lcd::print(4, "Target: %.1f in", GetWalkTarget());
+            pros::lcd::print(5, "IMU:%.1f", imu.getRotation().convert(deg));  // 陀螺仪航向，持续显示
             pros::delay(100);
         }
     });
@@ -102,6 +103,7 @@ void auto1() {
     liftCmd = {60, 330, 550};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
+    turnSettings.angularPID = lemlib::PID(1.0, 0.0, 0.1);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
     return;
 
