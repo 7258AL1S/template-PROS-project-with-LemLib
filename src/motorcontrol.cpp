@@ -1195,8 +1195,8 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 	uint32_t startTime = pros::millis();
 	uint32_t lastPrint = 0;
 
-	// 调试输出：入口航向（度）
-	pros::lcd::print(5, "start:%.1f", startAngle);
+	// 调试输出：第 3 行显示陀螺仪（IMU 航向，度，精确到 0.1）
+	pros::lcd::print(3, "IMU:%.1f", startAngle);
 
 	// 转向过程中用 BRAKE 模式，到位后 brake() 有阻力不会滑过
 	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
@@ -1228,9 +1228,9 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg) {
 			out *= (elapsed / static_cast<float>(kRampTimeMs));
 		}
 
-		// 调试输出：每 100ms 刷新一次，显示误差与陀螺仪（IMU 航向）
+		// 调试输出：每 100ms 刷新一次第 3 行陀螺仪读数
 		if (pros::millis() - lastPrint >= 100) {
-			pros::lcd::print(5, "e:%.0f g:%.1f", e, cur);
+			pros::lcd::print(3, "IMU:%.1f", cur);
 			lastPrint = pros::millis();
 		}
 
