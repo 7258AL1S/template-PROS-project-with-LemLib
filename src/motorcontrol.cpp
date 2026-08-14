@@ -1115,9 +1115,9 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 	// 轮径 2 英寸，周长 = π × 2 ≈ 6.283 in
 	constexpr float kWheelCircumference = 6.2831853f; // 2_in * π
 	// 保底功率：实测该场地“刚能起动”的功率，摩擦大调高
-	constexpr float kBreakawayPower = 0.15f;
+	constexpr float kBreakawayPower = 0.02f;  // 保底功率降低：否则减速段后半程会被 0.15 抬住，进窗口速度降不下来
 	constexpr uint32_t kRampTimeMs = 100;  // 软启动斜坡时长（毫秒），减少起步打滑
-	constexpr float kArrivalDist = 1.0f;   // 到位窗口（英寸）：放宽到 1.0，避免高速下跳过窗口
+	constexpr float kArrivalDist = 0.4f;   // 到位窗口（英寸）：放宽到 1.0，避免高速下跳过窗口--改了
 
 	walkTargetDisplay = Target;  // 供屏幕显示当前段目标
 

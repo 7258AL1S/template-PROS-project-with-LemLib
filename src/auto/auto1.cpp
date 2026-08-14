@@ -93,24 +93,26 @@ void auto1() {
     lemlib::TurnToParams turnParams;
     lemlib::TurnToSettings turnSettings;
    
-    ClawClose();
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(0.9,5.5,1000,4.0f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(0.9,5.5,1000,3.8f);        // 新版：Power, Target, FullTime, DecelDist
 
 
 
-    liftCmd = {50, 325, 550};
+    liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
+    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.09);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,13.5,1000,5.5f); 
-    LiftUpDegree(-20, 358, 350);
+    GoForWardCurve(1.0,14.8,1000,6.5f); 
+    LiftUpDegree(-14, 358, 450);
+    pros::delay(100);
     ClawOpen();
-    pros::delay(60);
-    GoForWardCurve(1.0,-7.5,1000,5.0f);
-    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
+    pros::delay(200);
+    left_motors.move(0);
+	right_motors.move(0);
+    GoForWardCurve(0.7,-3.8,700,2.0f);
+    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.09);
     lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
 
     // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
