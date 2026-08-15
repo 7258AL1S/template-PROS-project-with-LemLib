@@ -112,8 +112,11 @@ void opcontrol() {
 		int BtnX = master.get_digital(DIGITAL_X);
 		int BtnB  = master.get_digital(DIGITAL_B);
 		int BtnY  = master.get_digital(DIGITAL_Y);
+		int BtnUp = master.get_digital(DIGITAL_UP);
 
-		drive(dir, turn);
+		if (!ChassisLock(BtnUp)) {
+			drive(dir, turn);
+		}
 
 
 		TugglePistonControl(BtnA);   // A 键切换拨片气缸

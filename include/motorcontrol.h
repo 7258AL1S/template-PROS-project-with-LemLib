@@ -128,6 +128,14 @@ void drive(int dir, int turn);
 
 
 /**
+ * @brief 底盘锁：按住上键 HOLD，松开 COAST；锁定期间跳过正常 drive 输入
+ * @param BtnPressed 上键原始状态 (1=按住, 0=松开)
+ * @return true=锁定中，false=正常手动
+ */
+bool ChassisLock(int BtnPressed);
+
+
+/**
  * @brief 爪子控制(时间控制)
  * @param BtnPressed 按键按下状态
  */

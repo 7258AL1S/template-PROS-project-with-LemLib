@@ -1007,6 +1007,38 @@ void drive(int dir,int turn){
 	} 
 }
 
+/**
+ * @brief 底盘锁：按住上键 HOLD，松开 COAST；锁定期间跳过正常 drive 输入
+ * @param BtnPressed 上键原始状态 (1=按住, 0=松开)
+ * @return true=锁定中，false=正常手动
+ *
+ * 仅在刹车模式发生变化时写入端口；松开时把左右电机切回 COAST 并清零输出，
+ * 之后由 drive() 正常接管手动控制。
+ */
+bool ChassisLock(int BtnPressed) {
+	if (BtnPressed) {
+		// 按住：切 HOLD 并立即刹车锁住当前位置
+		if (left_motors.getBrakeMode() != lemlib::BrakeMode::HOLD ||
+		    right_motors.getBrakeMode() != lemlib::BrakeMode::HOLD) {
+			left_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
+			right_motors.setBrakeMode(lemlib::BrakeMode::HOLD);
+			left_motors.brake();
+			right_motors.brake();
+		}
+	} else {
+		// 松开：恢复正常手动 COAST
+		if (left_motors.getBrakeMode() != lemlib::BrakeMode::COAST ||
+		    right_motors.getBrakeMode() != lemlib::BrakeMode::COAST) {
+			left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
+			right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
+			left_motors.move(0);
+			right_motors.move(0);
+		}
+	}
+
+	return BtnPressed != 0;
+}
+
 // ============================================================
 // GoForWard — 竖直定位轮 + PID 闭环前进/后退
 // ============================================================
