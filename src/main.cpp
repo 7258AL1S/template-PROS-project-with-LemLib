@@ -67,6 +67,9 @@ void autonomous() {
 		case 1:
 			auto1();
 			break;
+		case 2:
+			auto2();
+			break;
 		default:
 			break;
 	}

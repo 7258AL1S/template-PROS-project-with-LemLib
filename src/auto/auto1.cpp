@@ -3,7 +3,7 @@
 // ============================================================
 // 自动程序
 // ============================================================
-void auto1() {
+void auto1() {//开局右拐一个pin
 
     startAutoBackgroundTasks();
 
@@ -50,6 +50,9 @@ void auto1() {
     left_motors.move(0);
 	right_motors.move(0);
     GoForWardCurve(0.9,-4.6,1000,2.0f);
+    return;
+
+
     turnSettings.angularPID = lemlib::PID(1.38, 0.0, 0.073);
     lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
     liftCmd = {-10, 359, 300};
@@ -64,7 +67,7 @@ void auto1() {
     pros::delay(100);
     return;
 
-
+/*
     ClawUP = true;
     clawGo = true;
     GoForWard(1.0,10.5,2000,pid);
@@ -169,4 +172,5 @@ void auto1() {
 
     turnSettings.angularPID = lemlib::PID(1.05, 0.0, 0.06);
     lemlib::turnTo(45_stDeg, 800_msec, turnParams, turnSettings);
+    */
 }

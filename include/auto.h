@@ -14,3 +14,4 @@
 #include "auto_common.h"
 
 void auto1();
+void auto2();
