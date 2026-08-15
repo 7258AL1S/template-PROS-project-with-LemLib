@@ -48,8 +48,8 @@ int auton = 1; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
 // 自动名称表，索引 0 对应 auton=1
 constexpr int kAutonCount = 2;
 const char* const kAutonNames[kAutonCount] = {
-    "Auto1 Right",
-    "Auto2 Left"
+    "Auto1 右拐1pin",
+    "Auto2 左拐1pin"
 };
 
 // 手柄选择自动程序：左/右切换，A 确认
@@ -75,6 +75,7 @@ void selectAuton() {
         }
         if (!lastA && a) {
             auton = selected + 1;
+            // 确认后立即结束选择器，不再向手柄发送文本或震动
             break;
         }
 
@@ -91,8 +92,6 @@ void selectAuton() {
 
         pros::delay(20);
     }
-
-    master.rumble(".");
 }
 
 /**
