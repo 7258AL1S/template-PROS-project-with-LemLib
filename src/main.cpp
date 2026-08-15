@@ -23,6 +23,7 @@ void on_center_button() {
 int auton = 1; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
 void selectAuton();
 
+
 /**
  * 运行初始化代码，在程序启动后立即执行。
  *
@@ -76,7 +77,10 @@ void selectAuton() {
         }
         if (!lastA && a) {
             auton = selected + 1;
-            // 确认后立即结束选择器，不再向手柄发送文本或震动
+            // A 确认后，在名称后显示 OK，2 秒后清空手柄文字
+            master.print(0, 0, "%s OK", kAutonNames[selected]);
+            pros::delay(2000);
+            master.clear();
             break;
         }
 
