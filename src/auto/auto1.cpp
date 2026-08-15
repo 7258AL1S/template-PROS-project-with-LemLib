@@ -95,26 +95,32 @@ void auto1() {
    
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(0.9,5.5,1000,3.8f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(0.9,5.5,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
 
 
 
     liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.09);
+    turnSettings.angularPID = lemlib::PID(1.32, 0.0, 0.09);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,14.8,1000,6.5f); 
+    GoForWardCurve(1.0,14.7,1000,8.3f); 
     LiftUpDegree(-14, 358, 450);
     pros::delay(100);
     ClawOpen();
-    pros::delay(200);
+    pros::delay(300);
     left_motors.move(0);
 	right_motors.move(0);
-    GoForWardCurve(0.7,-3.8,700,2.0f);
-    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.09);
+    GoForWardCurve(0.9,-4.6,1000,2.0f);
+    turnSettings.angularPID = lemlib::PID(1.38, 0.0, 0.073);
     lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
-
+    liftCmd = {-10, 359, 300};
+    liftGo = true;
+    ClawOpen();
+    ClawIntake();
+    GoForWardCurve(1.0,18.7,1000,9.0f);
+    pros::delay(100);
+    ClawClose();
     // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
     autoActive = false;
     pros::delay(100);

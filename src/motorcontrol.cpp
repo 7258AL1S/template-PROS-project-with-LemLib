@@ -1117,7 +1117,7 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 	// 保底功率：实测该场地“刚能起动”的功率，摩擦大调高
 	constexpr float kBreakawayPower = 0.02f;  // 保底功率降低：否则减速段后半程会被 0.15 抬住，进窗口速度降不下来
 	constexpr uint32_t kRampTimeMs = 100;  // 软启动斜坡时长（毫秒），减少起步打滑
-	constexpr float kArrivalDist = 0.4f;   // 到位窗口（英寸）：放宽到 1.0，避免高速下跳过窗口--改了
+	constexpr float kArrivalDist = 0.4f;   // 到位窗口（英寸）：收紧到 0.4，让斜坡把功率压到接近 0 再刹车
 
 	walkTargetDisplay = Target;  // 供屏幕显示当前段目标
 
