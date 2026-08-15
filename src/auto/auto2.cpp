@@ -50,7 +50,9 @@ void auto2() {//开局左拐一个pin
     left_motors.move(0);
 	right_motors.move(0);
     GoForWardCurve(0.9,-4.6,1000,2.0f);
-
+    // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
+    autoActive = false;
+    pros::delay(100);
     return;
 
     turnSettings.angularPID = lemlib::PID(1.38, 0.0, 0.073);
