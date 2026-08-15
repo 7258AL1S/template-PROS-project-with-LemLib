@@ -1,73 +1,11 @@
 #include "auto.h"
 
 // ============================================================
-// 子系统多线程控制变量
-// ============================================================
-
-// 升降机构参数（对应 LiftUpDegree 的三个 float 参数）
-struct LiftParams {
-    float Power;
-    float Target;
-    float Fulltime;
-};
-
-static LiftParams liftCmd  = {0, 0, 1000};  // 升降指令
-static bool      liftGo    = false;       // true = 触发升降
-static bool      ClawUP    = false;       // false=收回(Turn0), true=伸出(Turn90)
-static bool      clawGo    = false;       // true = 触发夹爪旋转
-static bool      xMacroGo  = false;       // true = 触发 X 键宏（归位+降底）
-static bool      autoActive = true;       // true = 自动进行中，task 用它退出
-static bool      autoBusy   = false;      // true = task 正在执行阻塞操作
-
-// 后台任务：轮询控制变量，执行升降 / 夹爪旋转（阻塞式，与底盘并行）
-void autoSubsystems() {
-    while (autoActive) {
-        if (liftGo) {
-            liftGo = false;
-            autoBusy = true;
-            LiftUpDegree(liftCmd.Power, liftCmd.Target, liftCmd.Fulltime);
-            autoBusy = false;
-        }
-        if (clawGo) {
-            clawGo = false;
-            autoBusy = true;
-            if (ClawUP) Claw_Turn90();
-            else        Claw_Turn0();
-            autoBusy = false;
-        }
-        if (xMacroGo) {
-            xMacroGo = false;
-            autoBusy = true;
-            x_macro(1);                 // 模拟按键上升沿触发
-            pros::delay(20);
-            while (x_macro(0)) {        // 持续喂状态机直到完成
-                pros::delay(20);
-            }
-            autoBusy = false;
-        }
-        pros::delay(10);
-    }
-}
-
-// ============================================================
 // 自动程序
 // ============================================================
 void auto1() {
 
-    autoActive = true;  // 每次自动开始时重置标志位
-
-    // static 防止 auto1 返回时析构干扰调度器（每次运行只跑一遍自动）
-    static pros::Task subTask(autoSubsystems);
-    static pros::Task debugTask([] {
-        // 显示 GoForWard 自己用 horizontalEncoder 算出的位移，不依赖 LemLib 里程计
-        pros::lcd::clear_line(5);
-        while (autoActive) {
-            pros::lcd::print(3, "Dist: %.1f in", GetWalkDist());
-            pros::lcd::print(4, "Target: %.1f in", GetWalkTarget());
-            pros::lcd::print(5, "IMU:%.1f", imu.getRotation().convert(deg));  // 陀螺仪航向，持续显示
-            pros::delay(100);
-        }
-    });
+    startAutoBackgroundTasks();
 
     Claw_Rot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     Claw_Rot.brake();

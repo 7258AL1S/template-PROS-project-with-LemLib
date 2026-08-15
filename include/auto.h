@@ -11,4 +11,6 @@
 #endif
 
 
+#include "auto_common.h"
+
 void auto1();
