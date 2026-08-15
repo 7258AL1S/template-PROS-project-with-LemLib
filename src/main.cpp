@@ -20,6 +20,9 @@ void on_center_button() {
 	}
 }
 
+int auton = 1; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
+void selectAuton();
+
 /**
  * 运行初始化代码，在程序启动后立即执行。
  *
@@ -33,7 +36,7 @@ void initialize() {
 	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 
-
+	selectAuton();
 	lemLibInit(); // 初始化 LemLib（IMU 校准 + 里程计启动）
 }
 
@@ -43,13 +46,11 @@ void initialize() {
  */
 void disabled() {}
 
-int auton = 1; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
-
 // 自动名称表，索引 0 对应 auton=1
 constexpr int kAutonCount = 2;
 const char* const kAutonNames[kAutonCount] = {
-    "Auto1 右拐1pin",
-    "Auto2 左拐1pin"
+    "Auto1 右转1pin",
+    "Auto2 左转1pin"
 };
 
 // 手柄选择自动程序：左/右切换，A 确认
@@ -84,7 +85,7 @@ void selectAuton() {
         lastA     = a;
 
         if (displayed != selected) {
-            master.print(0, 0, "Auto: %s", kAutonNames[selected]);
+            master.set_text(0, 0, kAutonNames[selected]);
             master.set_text(1, 0, "<L/R> switch");
             master.set_text(2, 0, "A = Confirm");
             displayed = selected;
@@ -101,7 +102,6 @@ void selectAuton() {
  * 机器人被启用并进入 autonomous 或 opcontrol 时，此 task 退出。
  */
 void competition_initialize() {
-    selectAuton();
 }
 
 
