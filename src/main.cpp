@@ -43,17 +43,70 @@ void initialize() {
  */
 void disabled() {}
 
+int auton = 1; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
+
+// 自动名称表，索引 0 对应 auton=1
+constexpr int kAutonCount = 2;
+const char* const kAutonNames[kAutonCount] = {
+    "Auto1 Right",
+    "Auto2 Left"
+};
+
+// 手柄选择自动程序：左/右切换，A 确认
+void selectAuton() {
+    pros::Controller master(pros::E_CONTROLLER_MASTER);
+
+    int selected = (auton >= 1 && auton <= kAutonCount) ? (auton - 1) : 0;
+    bool lastLeft  = false;
+    bool lastRight = false;
+    bool lastA     = false;
+    int displayed  = -1;
+
+    while (true) {
+        int left  = master.get_digital(DIGITAL_LEFT);
+        int right = master.get_digital(DIGITAL_RIGHT);
+        int a     = master.get_digital(DIGITAL_A);
+
+        if (!lastLeft && left) {
+            selected = (selected + kAutonCount - 1) % kAutonCount;
+        }
+        if (!lastRight && right) {
+            selected = (selected + 1) % kAutonCount;
+        }
+        if (!lastA && a) {
+            auton = selected + 1;
+            break;
+        }
+
+        lastLeft  = left;
+        lastRight = right;
+        lastA     = a;
+
+        if (displayed != selected) {
+            master.print(0, 0, "Auto: %s", kAutonNames[selected]);
+            master.set_text(1, 0, "<L/R> switch");
+            master.set_text(2, 0, "A = Confirm");
+            displayed = selected;
+        }
+
+        pros::delay(20);
+    }
+
+    master.rumble(".");
+}
+
 /**
  * 在 initialize() 之后、autonomous 之前运行（仅竞赛模式）。
  * 用于竞赛特定初始化，如 LCD 自动选择器。
  *
  * 机器人被启用并进入 autonomous 或 opcontrol 时，此 task 退出。
  */
-void competition_initialize() {}
+void competition_initialize() {
+    selectAuton();
+}
 
 
 
-int auton = 1;// 选择自动程序（1、2、3...）
 /**
  * 运行用户自动代码。此函数在独立 task 中以默认优先级和栈大小启动，
  * 每当机器人通过 FMS 或 VEX 竞赛开关在自动模式下被启用时调用。
