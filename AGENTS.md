@@ -197,3 +197,26 @@ git push -f origin main
 - [README.md](README.md) — 硬件要求、许可证
 - [PROS 官方文档](https://pros.cs.purdue.edu/)
 - [LemLib 文档](https://github.com/LemLib/LemLib)
+
+## 新增自动程序模板（记忆）
+
+新建 `src/auto/auto2.cpp` 时，文件本身只需要 `#include "auto.h"`，因为 `auto.h` 已经包含 `auto_common.h` 和所需控制头文件。
+
+```cpp
+#include "auto.h"
+
+void auto2() {
+    startAutoBackgroundTasks();
+
+    // 这里写 auto2 流程，可访问 liftCmd / liftGo / ClawUP / clawGo / xMacroGo / autoActive / autoBusy
+
+    autoActive = false;
+}
+```
+
+接入步骤：
+
+1. 在 `include/auto.h` 增加 `void auto2();`。
+2. 在 `src/main.cpp` 的 `autonomous()` switch 中增加 `case 2: auto2(); break;`。
+
+注意：`startAutoBackgroundTasks()` 当前沿用 `static pros::Task`，后台任务只在程序生命周期内首次调用时真正创建。比赛时一次只跑一个 auto 没问题；若要在同一次运行中连续切换 `auto1`/`auto2`，需进一步改成可重启任务管理。
