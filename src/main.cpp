@@ -20,7 +20,7 @@ void on_center_button() {
 	}
 }
 
-int auton = 1; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
+int auton = 2; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
 void selectAuton();
 
 
@@ -50,8 +50,8 @@ void disabled() {}
 // 自动名称表，索引 0 对应 auton=1
 constexpr int kAutonCount = 2;
 const char* const kAutonNames[kAutonCount] = {
-    "Auto1 右转1pin",
-    "Auto2 左转1pin"
+    "Auto1 右转30分",
+    "Auto2 左转30分"
 };
 
 // 手柄选择自动程序：左/右切换，A 确认
