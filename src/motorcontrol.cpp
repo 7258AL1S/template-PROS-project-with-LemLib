@@ -1204,7 +1204,7 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 		left_motors.move(out);
 		right_motors.move(out);
 
-		pros::delay(10);
+		pros::delay(3);
 	}
 
 	// 刹车

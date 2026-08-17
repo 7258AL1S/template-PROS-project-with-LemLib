@@ -33,20 +33,18 @@ void auto2() {//开局左拐一个pin
    
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(0.9,5.5,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
-
-
+    GoForWardCurve(0.9,6.1,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
 
     liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
     turnSettings.angularPID = lemlib::PID(1.32, 0.0, 0.09);
     lemlib::turnTo(90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,14.7,1000,8.3f); 
+    GoForWardCurve(1.0,15.2,1000,8.3f); 
     LiftUpDegree(-14, 358, 450);
-    pros::delay(100);
+    pros::delay(200);
     ClawOpen();
-    pros::delay(300);
+    pros::delay(500);
     left_motors.move(0);
 	right_motors.move(0);
     GoForWardCurve(0.9,-4.6,1000,2.0f);

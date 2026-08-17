@@ -33,38 +33,58 @@ void auto1() {//开局右拐一个pin
    
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(0.9,5.5,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(1.0,5.5,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
 
 
 
     liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.32, 0.0, 0.09);
+    turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.1);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,14.7,1000,8.3f); 
+    GoForWardCurve(1.0,14.5,1000,9.0f); 
     LiftUpDegree(-14, 358, 450);
-    pros::delay(100);
     ClawOpen();
-    pros::delay(300);
+    pros::delay(400);
     left_motors.move(0);
 	right_motors.move(0);
-    GoForWardCurve(0.9,-4.6,1000,2.0f);
-    // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
-    autoActive = false;
-    pros::delay(100);
-    return;
+    GoForWardCurve(1.0,-7.3,1000,4.0f);
 
 
-    turnSettings.angularPID = lemlib::PID(1.38, 0.0, 0.073);
+    turnSettings.angularPID = lemlib::PID(1.43, 0.0, 0.086);
     lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
+    liftCmd = {-10, 359, 300};
+    liftGo = true;
+
+
+
+    ClawOpen();
+    ClawIntake();
+    GoForWardCurve(1.0,19.4,1000,9.0f);
+    pros::delay(100);
+    ClawClose();
+
+    liftCmd = {40, 310, 800};
+    liftGo = true;
+    GoForWardCurve(1.0,2.6,500,1.0f);
+    turnSettings.angularPID = lemlib::PID(1.28, 0.0, 0.12);
+    lemlib::turnTo(-180_stDeg, 900_msec, turnParams, turnSettings);
+    GoForWardCurve(1.0,12.0,1000,4.0f); 
+    LiftUpDegree(-15, 350, 500);
+    ClawOpen();
+    GoForWardCurve(1.0,-7.5,1000,3.9f); 
+    turnSettings.angularPID = lemlib::PID(1.44, 0.0, 0.08);
+    lemlib::turnTo(-135_stDeg, 900_msec, turnParams, turnSettings);
     liftCmd = {-10, 359, 300};
     liftGo = true;
     ClawOpen();
     ClawIntake();
-    GoForWardCurve(1.0,18.7,1000,9.0f);
+    GoForWardCurve(1.0,19.6,1300,8.0f);
     pros::delay(100);
     ClawClose();
+    GoForWardCurve(1.0,-19.6,1300,7.0f);
+
+
     // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
     autoActive = false;
     pros::delay(100);

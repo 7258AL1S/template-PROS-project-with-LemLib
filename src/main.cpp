@@ -37,7 +37,7 @@ void initialize() {
 	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 
-	selectAuton();
+	//selectAuton();
 	lemLibInit(); // 初始化 LemLib（IMU 校准 + 里程计启动）
 }
 
