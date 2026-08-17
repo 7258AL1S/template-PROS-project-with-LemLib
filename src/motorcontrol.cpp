@@ -673,6 +673,14 @@ void ClawOuttake(){
 	Claw_Right.move(70);
 }
 
+void ClawStopIntake(){
+	// 停止进爪电机，BRAKE 刹车
+	Claw_Left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	Claw_Right.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	Claw_Left.brake();
+	Claw_Right.brake();
+}
+
 
 
 static bool clawOpen  = false;   // 当前目标：true=开, false=关

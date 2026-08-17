@@ -158,6 +158,7 @@ void ClawCloseSimple();
 
 void ClawIntake();
 void ClawOuttake();
+void ClawStopIntake();
 
 /**
  * @brief 爪子控制_气动
