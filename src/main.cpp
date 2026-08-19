@@ -20,7 +20,7 @@ void on_center_button() {
 	}
 }
 
-int auton = 2; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
+int auton = 1; // 选择自动程序（1=Auto1 Right，2=Auto2 Left）
 void selectAuton();
 
 
@@ -37,7 +37,7 @@ void initialize() {
 	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 
-	//selectAuton();
+	selectAuton();
 	lemLibInit(); // 初始化 LemLib（IMU 校准 + 里程计启动）
 }
 
@@ -48,10 +48,18 @@ void initialize() {
 void disabled() {}
 
 // 自动名称表，索引 0 对应 auton=1
-constexpr int kAutonCount = 2;
+constexpr int kAutonCount = 6;
 const char* const kAutonNames[kAutonCount] = {
     "Auto1 右转30分",
-    "Auto2 左转30分"
+    "Auto2 左转30分",
+	"Auto3 右转20分",
+    "Auto4 左转20分",
+	"Auto5 右转10分",
+    "Auto6 左转10分"
+
+
+
+
 };
 
 // 手柄选择自动程序：左/右切换，A 确认
@@ -121,10 +129,22 @@ void competition_initialize() {
 void autonomous() {
 	switch (auton) {
 		case 1:
-			auto1();
+			auto1(3);
 			break;
 		case 2:
-			auto2();
+			auto2(3);
+			break;
+		case 3:
+			auto1(2);
+			break;
+		case 4:
+			auto2(2);
+			break;
+		case 5:
+			auto1(1);
+			break;
+		case 6:
+			auto2(1);
 			break;
 		default:
 			break;

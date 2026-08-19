@@ -153,6 +153,7 @@ void Claw_control_time(int BtnPressed);
 void ClawOpen();
 void ClawClose();
 void ClawOpenSimple();
+
 void ClawCloseSimple();
 
 

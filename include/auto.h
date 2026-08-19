@@ -12,6 +12,13 @@
 
 
 #include "auto_common.h"
-
-void auto1();
-void auto2();
+/**
+ * @brief 开局右转
+ * @param StopFlag 1->1pin  2->2pin  3->3pin
+ */
+void auto1(int StopFlag);
+/**
+ * @brief 开局左转
+ * @param StopFlag 1->1pin  2->2pin  3->3pin
+ */
+void auto2(int StopFlag);
