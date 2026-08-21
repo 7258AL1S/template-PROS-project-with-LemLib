@@ -45,13 +45,13 @@ void auto1(int StopFlag) {
 	right_motors.move(0.1);
     LiftUpDegree(-14, 358, 450);
     
-    pros::delay(300);
+    pros::delay(200);
     lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	lift1.brake();
 	lift2.brake();
     ClawOpen();
-    pros::delay(600);
+    pros::delay(500);
     /////
     left_motors.move(0);
 	right_motors.move(0);
@@ -73,19 +73,19 @@ void auto1(int StopFlag) {
 
     ClawOpen();
     ClawIntake();
-    GoForWardCurve(1.0,19.6,1600,9.0f);
+    GoForWardCurve(1.0,19.8,1600,9.0f);
     pros::delay(100);
     ClawClose();
     //ClawStopIntake();
-    liftCmd = {50, 315, 800};
+    liftCmd = {60, 306, 1000};
     liftGo = true;
-    GoForWardCurve(1.0,2.9,500,1.0f);
-    turnSettings.angularPID = lemlib::PID(1.28, 0.0, 0.11);
+    GoForWardCurve(1.0,2.6,500,1.0f);
+    turnSettings.angularPID = lemlib::PID(1.28, 0.0, 0.115);
     lemlib::turnTo(-180_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,11.7,1000,7.0f); 
+    GoForWardCurve(1.0,13.3,1000,7.0f); 
     left_motors.move(0.1);
 	right_motors.move(0.1);
-    LiftUpDegree(-25, 350, 500);
+    LiftUpDegree(-22, 350, 500);
 
     
     pros::delay(200);
@@ -121,33 +121,59 @@ void auto1(int StopFlag) {
     //ClawStopIntake();
     liftCmd = {90, 305, 1000};
     liftGo = true;
-    GoForWardCurve(1.0,3.2,500,1.0f);
-    liftCmd = {40, 305, 300};
-    liftGo = true;
-    turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.106);
-    lemlib::turnTo(90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,13.9,1000,8.0f); 
-    left_motors.move(0.1);
-	right_motors.move(0.1);
-    LiftUpDegree(-24, 332, 800);
 
+    if(StopFlag == 3){//30分
+        GoForWardCurve(1.0,3.2,500,1.0f);
+        liftCmd = {40, 305, 300};
+        liftGo = true;
+        turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.106);
+        lemlib::turnTo(90_stDeg, 900_msec, turnParams, turnSettings);
+        GoForWardCurve(1.0,13.9,1000,8.0f); 
+        left_motors.move(0.1);
+        right_motors.move(0.1);
+        LiftUpDegree(-30, 345, 1000);
+
+        pros::delay(200);
+        lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+        lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+        lift1.brake();
+        lift2.brake();
+        ClawOpen();
+        pros::delay(100);
+
+        /////
+        left_motors.move(0);
+        right_motors.move(0);
+        GoForWardCurve(1.0,-7.1,1000,3.9f); 
+        ClawClose();
     
-    pros::delay(200);
-    lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-	lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-	lift1.brake();
-	lift2.brake();
-    ClawOpen();
-    pros::delay(100);
 
-    /////
-    left_motors.move(0);
-	right_motors.move(0);
-    GoForWardCurve(1.0,-7.1,1000,3.9f); 
-    ClawClose();
-    turnSettings.angularPID = lemlib::PID(1.44, 0.0, 0.085);
-    lemlib::turnTo(-135_stDeg, 900_msec, turnParams, turnSettings);
+        
+    } else {//AWP
+        pros::delay(100);
+        GoForWardCurve(1.0,-16,1600,8.0f);
+        turnSettings.angularPID = lemlib::PID(1.22, 0.0, 0.12);
+        lemlib::turnTo(116.57_stDeg, 900_msec, turnParams, turnSettings);
+        liftCmd = {40, 300, 500};
+        liftGo = true;
+        GoForWardCurve(1.0,33,2500,8.0f);
+        left_motors.move(0.1);
+        right_motors.move(0.1);
+        LiftUpDegree(-30, 345, 1000);
 
+        pros::delay(200);
+        lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+        lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+        lift1.brake();
+        lift2.brake();
+        ClawOpen();
+        pros::delay(100);
+        left_motors.move(0);
+        right_motors.move(0);
+        GoForWardCurve(1.0,-3,1000,1.5f); 
+        ClawClose();
+
+    }
     // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
     autoActive = false;
     pros::delay(100);

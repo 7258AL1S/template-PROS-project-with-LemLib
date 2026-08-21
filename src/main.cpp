@@ -48,15 +48,15 @@ void initialize() {
 void disabled() {}
 
 // 自动名称表，索引 0 对应 auton=1
-constexpr int kAutonCount = 6;
+constexpr int kAutonCount = 7;
 const char* const kAutonNames[kAutonCount] = {
-    "Auto1 右转30分",
-    "Auto2 左转30分",
-	"Auto3 右转20分",
-    "Auto4 左转20分",
-	"Auto5 右转10分",
-    "Auto6 左转10分"
-
+    "Auto1 近场30分",
+    "Auto2 远场30分",
+	"Auto3 近场20分",
+    "Auto4 远场20分",
+	"Auto5 近场10分",
+    "Auto6 远场10分",
+	"Auto7 近场AWP"
 
 
 
@@ -145,6 +145,9 @@ void autonomous() {
 			break;
 		case 6:
 			auto2(1);
+			break;
+		case 7:
+			auto1(4);
 			break;
 		default:
 			break;
