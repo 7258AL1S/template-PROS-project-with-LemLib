@@ -224,17 +224,6 @@ void opcontrol() {
 			Lift_simple(chR_Y);
 		}
 
-		// 爪子（宏激活时跳过）
-		if (!anyMacro) {
-			static bool clawOpen = false;  // 默认关闭
-			static bool l1Prev   = false;
-			bool l1Rising = (!l1Prev && BtnL1);
-			l1Prev = BtnL1;
-			if (l1Rising) clawOpen = !clawOpen;
-			if (clawOpen) ClawOpenSimple();
-			else          ClawCloseSimple();
-		}
-
 		//爪子Intake
 		ClawControl(BtnR1, BtnY, BtnL1);
 /*
