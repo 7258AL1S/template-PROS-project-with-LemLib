@@ -11,6 +11,16 @@ Team 7258A · PROS Kernel 4.2.2 · C++ gnu++26 · ARM Cortex-A9
 - `bin/hot.package.bin` — 热固件（可动态更新）
 - `bin/monolith.bin` — 完整固件
 
+### 工具链兼容性记录
+
+2026-09-08 构建故障及修复过程：
+
+1. 构建最初使用 `/usr/local/Cellar/arm-gcc-bin@10/...` 的 ARM GCC 10.3 链接器，但预编译库并非同一版本：`hardware.a`、`lemlog.a` 使用 GCC 14，`libpros.a`、`liblvgl.a` 使用 GCC 13。由此产生 `std::__throw_bad_array_new_length()` 和 `std::__cxx11::basic_string<...>::_M_replace_cold()` 未定义符号。
+2. `.vscode/c_cpp_properties.json` 中的 `compilerPath` 只影响 IntelliSense，不控制 PROS 实际构建。PROS 扩展原有工具链路径已不存在，修改该路径本身不能解决链接错误。
+3. GCC 10.3 还不支持 `--no-warn-rwx-segments`，该参数从 `common.mk` 的 `LNK_FLAGS` 中移除。
+4. `common.mk` 的 `ARCHTUPLE` 已固定为 `/usr/local/opt/arm-gcc-bin@14/bin/arm-none-eabi-`，并将 `.vscode/c_cpp_properties.json` 的 `compilerPath` 同步到 GCC 14。
+5. 修改后通过 VS Code 中 PROS 扩展的 **Build** 按钮成功构建。以后遇到相同的未定义 C++ 运行时符号，先检查实际链接器版本，不要只修改 IntelliSense 配置；构建仍必须使用 PROS **Build** 按钮。
+
 ## 入口点 & 生命周期
 
 [`src/main.cpp`](src/main.cpp) 包含 PROS 标准生命周期函数，按执行顺序：
