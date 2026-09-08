@@ -178,6 +178,15 @@ void PickControl(bool tuggleActive);
  */
 void TugglePistonControl(bool BtnA);
 
+/**
+ * @brief 夹子俯仰轴 45°/竖直 切换（气动，非阻塞）
+ * @param BtnPressed 按键原始状态 (1=按下, 0=松开)
+ *
+ * 上升沿切换，状态放函数内 static。
+ * 气动伸出(true) → 夹子竖直；气动缩回(false) → 夹子斜 45°。
+ */
+void ClawPitch45(bool BtnPressed);
+
 /*
  * @brief 俯仰轴旋转（目标驱动，非阻塞）
  * @param target true=90°位置, false=0°位置
@@ -329,4 +338,3 @@ void TurnCurve(float Power, float Target, float FullTime, float DecelDeg);
  * 在 initialize() 中调用
  */
 void lemLibInit();
-

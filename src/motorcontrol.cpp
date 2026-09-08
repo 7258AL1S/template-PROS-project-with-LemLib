@@ -740,6 +740,22 @@ void TugglePistonControl(bool BtnA){
 	Piston_tuggle2.set_value(pistonActive);
 }
 
+// 夹子俯仰轴 45°/竖直 切换（气动，非阻塞）
+// 入参传原始按键状态，状态放 static；上升沿切换：
+// 气动伸出(true) → 夹子竖直；气动缩回(false) → 夹子斜 45°
+void ClawPitch45(bool BtnPressed) {
+	static bool     pistonExtended = false;  // true=伸出(竖直)，false=缩回(斜45°)
+	static bool     prevBtn        = false;  // 上一帧按键状态（上升沿检测）
+
+	// 上升沿：按下瞬间切换气动状态
+	if (!prevBtn && BtnPressed) {
+		pistonExtended = !pistonExtended;
+	}
+	prevBtn = BtnPressed;
+
+	Piston_pitch45.set_value(pistonExtended);
+}
+
 
 
 void Claw_Turn(int btn){
