@@ -226,6 +226,7 @@ void opcontrol() {
 
 		//爪子Intake
 		ClawControl(BtnR1, BtnY, BtnL1);
+		ClawPitch45(BtnB);
 /*
 		// 俯仰轴旋转（宏激活时跳过）
 		if (!anyMacro) {
