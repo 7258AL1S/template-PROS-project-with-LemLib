@@ -217,16 +217,16 @@ void opcontrol() {
 		xWasActive = xActive;
 */
 		bool anyMacro = 0;
+		bool clawAt45 = ClawPitch45(BtnB);
 
 		// 升降（tuggle 激活时抑制升降输入，宏激活时由宏内部控制）
 		if (!anyMacro) {
-			//Lift_simple(tuggleActive ? 0 : chR_Y);
-			Lift_simple(chR_Y);
+			//Lift_simple(tuggleActive ? 0 : chR_Y, clawAt45);
+			Lift_simple(chR_Y, clawAt45);
 		}
 
 		//爪子Intake
 		ClawControl(BtnR1, BtnY, BtnL1);
-		ClawPitch45(BtnB);
 /*
 		// 俯仰轴旋转（宏激活时跳过）
 		if (!anyMacro) {

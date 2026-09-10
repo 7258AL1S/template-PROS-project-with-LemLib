@@ -140,12 +140,20 @@ float Lift_pid(int joystickValue) {
 
 
 //无PID控制的简化LiftControl
-void Lift_simple(int joystickValue) {
+void Lift_simple(int joystickValue, bool clawAt45) {
 	// 读取当前升降角度（PROS Rotation 返回厘度，÷100 转度）
 	float currentAngle = liftRotation.get_angle() / 100.0f;
+	const bool atBottom = (currentAngle >= 346.0f || currentAngle <= 8.0f);
+	const bool liftUpRequested = (joystickValue > 25);
+	static bool adsorptionCancelled = false;
+
+	// 上推后保持取消，直到升降离开底部区间；再次降到底时才重新吸附。
+	if (!clawAt45 || !atBottom) adsorptionCancelled = false;
+	if (clawAt45 && atBottom && liftUpRequested) adsorptionCancelled = true;
+	const bool adsorptionActive = clawAt45 && atBottom && !adsorptionCancelled;
 
 	// 仅下降时接近底部 ±8°（含 359→0 环绕）：减速防撞底
-	if (joystickValue < 0 && (currentAngle >= 346.0f || currentAngle <= 8.0f)) {
+	if (joystickValue < 0 && atBottom) {
 		joystickValue = static_cast<int>(joystickValue * 0.3f);
 	}
 
@@ -156,8 +164,16 @@ void Lift_simple(int joystickValue) {
 	static uint32_t  rampStartTime   = 0;       // 缓降开始时间戳
 	static bool      ramping          = false;   // 是否正在缓降
 	constexpr uint32_t kRampMs = 300;            // 缓降时长（毫秒）
+	constexpr int kAdsorptionPower = 8;          // 请求范围 5~10，取中间值 8
+	constexpr int32_t kAdsorptionVoltageMv = -kAdsorptionPower * 128;
 
-	if (joystickValue > 25 || joystickValue < -25) {
+	if (adsorptionActive) {
+		// 使用恒定电压顶住底部，避免速度控制在堵转状态下反复报警。
+		lift1.move_voltage(kAdsorptionVoltageMv);
+		lift2.move_voltage(kAdsorptionVoltageMv);
+		rampTargetPower = 0;
+		ramping = false;
+	} else if (joystickValue > 25 || joystickValue < -25) {
 		// ———— 摇杆活动区：正常驱动 ————
 		float power = joystickValue * 0.8f;
 		lift1.move(power);
@@ -743,7 +759,7 @@ void TugglePistonControl(bool BtnA){
 // 夹子俯仰轴 45°/竖直 切换（气动，非阻塞）
 // 入参传原始按键状态，状态放 static；上升沿切换：
 // 气动伸出(true) → 夹子竖直；气动缩回(false) → 夹子斜 45°
-void ClawPitch45(bool BtnPressed) {
+bool ClawPitch45(bool BtnPressed) {
 	static bool     pistonExtended = false;  // true=伸出(竖直)，false=缩回(斜45°)
 	static bool     prevBtn        = false;  // 上一帧按键状态（上升沿检测）
 
@@ -754,6 +770,7 @@ void ClawPitch45(bool BtnPressed) {
 	prevBtn = BtnPressed;
 
 	Piston_pitch45.set_value(pistonExtended);
+	return !pistonExtended;
 }
 
 

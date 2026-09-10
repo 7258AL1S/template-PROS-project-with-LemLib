@@ -39,8 +39,9 @@ float Lift_pid(int joystickValue);
  * @brief 升降机构简化控制（直接摇杆映射 + 限位减速）
  * @param joystickValue 摇杆输入 [-127, 127]
  *                      正摇杆 → 上升，负摇杆 → 下降
+ * @param clawAt45      true=夹子斜 45°，允许到底后低功率持续下压吸附
  */
-void Lift_simple(int joystickValue);
+void Lift_simple(int joystickValue, bool clawAt45);
 
 /**
  * @brief 升降机构控制（无 PID，直接映射）
@@ -184,8 +185,9 @@ void TugglePistonControl(bool BtnA);
  *
  * 上升沿切换，状态放函数内 static。
  * 气动伸出(true) → 夹子竖直；气动缩回(false) → 夹子斜 45°。
+ * @return true=夹子斜 45°，false=夹子竖直
  */
-void ClawPitch45(bool BtnPressed);
+bool ClawPitch45(bool BtnPressed);
 
 /*
  * @brief 俯仰轴旋转（目标驱动，非阻塞）
