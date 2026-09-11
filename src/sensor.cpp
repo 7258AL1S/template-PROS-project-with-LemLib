@@ -24,7 +24,7 @@ pros::Motor    Claw_Rot(-21);         // 爪子俯仰轴旋转电机
 pros::Motor    Claw_return(-21);         // 爪子滚转轴旋转电机
 pros::Rotation ClawRotation(-21);  // 爪子编码器
 pros::Motor    Claw_Left(8);         // 爪子左旋转电机
-pros::Motor    Claw_Right(6);         // 爪子右旋转电机
+pros::Motor    Claw_Right(7);         // 爪子右旋转电机
 
 pros::Motor    TugglePick(-14);  // tuggle拨片
 
@@ -47,4 +47,4 @@ lemlib::V5RotationSensor  horizontalEncoder(-18);
 pros::ADIDigitalOut Piston_tuggle('A');  // 翻筒气动
 pros::ADIDigitalOut Piston_tuggle2('B');  // 翻筒气动
 pros::ADIDigitalOut Piston_claw('H');  // 爪子气动
-pros::ADIDigitalOut Piston_pitch45('C');  // 夹子俯仰 45° 气动（TODO: 确认实际 ADI 端口）
+pros::ADIDigitalOut Piston_pitch45('C');  // 夹子俯仰 45° 气动
