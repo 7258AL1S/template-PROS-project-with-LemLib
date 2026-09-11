@@ -184,7 +184,7 @@ void TugglePistonControl(bool BtnA);
  * @param BtnPressed 按键原始状态 (1=按下, 0=松开)
  *
  * 上升沿切换，状态放函数内 static。
- * 气动伸出(true) → 夹子竖直；气动缩回(false) → 夹子斜 45°。
+ * 气动缩回(false) → 夹子竖直；气动伸出(true) → 夹子斜 45°。
  * @return true=夹子斜 45°，false=夹子竖直
  */
 bool ClawPitch45(bool BtnPressed);

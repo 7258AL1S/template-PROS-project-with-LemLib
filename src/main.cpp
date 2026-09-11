@@ -36,7 +36,7 @@ void initialize() {
 	pros::lcd::register_btn1_cb(on_center_button);
 	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
-
+	Piston_pitch45.set_value(false);  // 缩回：夹子竖直
 	selectAuton();
 	lemLibInit(); // 初始化 LemLib（IMU 校准 + 里程计启动）
 }
