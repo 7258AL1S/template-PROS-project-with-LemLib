@@ -57,7 +57,7 @@ const char* const kAutonNames[kAutonCount] = {
 	"Auto5 近场10分",
     "Auto6 远场10分",
 	"Auto7 近场AWP",
-    "Auto Skill"
+    "Auto8"
 
 
 
