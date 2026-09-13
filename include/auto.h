@@ -22,3 +22,9 @@ void auto1(int StopFlag);
  * @param StopFlag 1->1pin  2->2pin  3->3pin
  */
 void auto2(int StopFlag);
+
+/**
+ * @brief Skill 自动程序入口
+ * @param StopFlag 预留给与其他自动程序一致的分段停止参数
+ */
+void auto_skill(int StopFlag);

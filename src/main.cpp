@@ -48,7 +48,7 @@ void initialize() {
 void disabled() {}
 
 // 自动名称表，索引 0 对应 auton=1
-constexpr int kAutonCount = 7;
+constexpr int kAutonCount = 8;
 const char* const kAutonNames[kAutonCount] = {
     "Auto1 近场30分",
     "Auto2 远场30分",
@@ -56,7 +56,8 @@ const char* const kAutonNames[kAutonCount] = {
     "Auto4 远场20分",
 	"Auto5 近场10分",
     "Auto6 远场10分",
-	"Auto7 近场AWP"
+	"Auto7 近场AWP",
+    "Auto Skill"
 
 
 
@@ -148,6 +149,9 @@ void autonomous() {
 			break;
 		case 7:
 			auto1(4);
+			break;
+		case 8:
+			auto_skill(3);
 			break;
 		default:
 			break;
