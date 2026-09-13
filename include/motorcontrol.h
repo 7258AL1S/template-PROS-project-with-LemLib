@@ -51,10 +51,10 @@ void Lift_simple(int joystickValue, bool clawAt45);
 void Lift(float Power);
 
 /**
- * @brief 升降机构控制（定角度 + 定时+给定功率）
- * @param Power  电机功率 [-127, 127]
- * @param Target 目标角度 (0° ~ 360°)
- * @param Fulltime 全功率持续时间（毫秒）
+ * @brief 升降机构闭环定位（定角度 + 超时保护）
+ * @param Power  最大电机功率幅度 [0, 127]，保留正负号仅为兼容旧调用
+ * @param Target 目标角度 (0° ~ 360°)，函数内部处理 0°/360° 环绕
+ * @param Fulltime 超时保护时间（毫秒），不是主要的高度控制量
  */
 void LiftUpDegree(float Power,float Target,float Fulltime);
 

@@ -248,42 +248,81 @@ void Lift(float Power){
 //Lift Autonomous
 
 // ⚠️ 含阻塞循环，仅在 autonomous() 中使用；opcontrol() 请用 Lift_pid()
-// 恒功率升降定位：指定功率朝着 Target 运行，±1° 到位或超时停止
+// 闭环升降定位：Power 提供最大输出幅度，方向由实时角度误差决定；Fulltime 仅作超时保护
 void LiftUpDegree(float Power, float Target, float Fulltime) {
-	// 机械零位偏移：传感器物理零位与逻辑零位差 20° Todo：测定实际偏移并调整
+	// 机械零位偏移：传感器物理零位与逻辑零位差 20°，目标和当前位置必须使用同一坐标系。
 	constexpr float kOffset = 20.0f;
-	Target += kOffset;
+	constexpr float kToleranceDeg = 1.0f;
+	constexpr float kDecelStartDeg = 25.0f;
+	constexpr float kMinPower = 8.0f;
+	constexpr uint32_t kControlPeriodMs = 10;
+	constexpr uint32_t kSettleCycles = 3;
 
-	// 当前角度（度），模 360 回绕到 [0, 360)
-	float cur = std::fmod(liftRotation.get_angle() / 100.0f + kOffset, 360.0f);
-	if (cur < 0.0f) cur += 360.0f;
+	auto normalizeAngle = [](float angle) {
+		angle = std::fmod(angle, 360.0f);
+		if (angle < 0.0f) angle += 360.0f;
+		return angle;
+	};
 
-	// 方向锁定：仅在循环前判定一次（若中途方向反转不会修正）
-	bool isUp = (Target - cur) > 0.0f;
+	const float maxPower = std::fmin(std::fabs(Power), 127.0f);
+	const uint32_t timeoutMs = Fulltime > 0.0f ? static_cast<uint32_t>(Fulltime) : 0;
 
-	// 超时计时起点
-	uint32_t start = pros::millis();
+	// 目标归一化到 [0, 360)，避免 Target + kOffset 变成 378° 等不可达值。
+	const float target = normalizeAngle(Target + kOffset);
 
-	while (pros::millis() - start < static_cast<uint32_t>(Fulltime)) {
-		pros::delay(10);  // 10ms 控制周期
+	// 直接在本函数内停止，绕过 Lift(0) 中永远为假的 uint32_t elapsed < 0 分支。
+	auto stopAndHold = []() {
+		lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+		lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+		lift1.brake();
+		lift2.brake();
+	};
 
-		// 刷新当前角度
-		cur = std::fmod(liftRotation.get_angle() / 100.0f + kOffset, 360.0f);
-		if (cur < 0.0f) cur += 360.0f;
-
-		float err = Target - cur;
-
-		// ±1° 死区：进入即到位
-		if (isUp) {
-			if (err < 1.0f) break;    // 上升：越过目标
-		} else {
-			if (err > -1.0f) break;   // 下降：越过目标
-		}
-
-		Lift(Power);  // 恒功率驱动（无减速斜坡）
+	if (maxPower < 1.0f || timeoutMs == 0) {
+		stopAndHold();
+		return;
 	}
 
-	Lift(0);  // 到位或超时 → 刹车停止
+	// 运动阶段先使用 BRAKE；正电机功率会让当前编码器角度减小，负功率会让其增大。
+	lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+
+	const uint32_t start = pros::millis();
+	uint32_t settleCycles = 0;
+	while (pros::millis() - start < timeoutMs) {
+		const float cur = normalizeAngle(liftRotation.get_angle() / 100.0f + kOffset);
+
+		// 计算最短有符号误差：正值表示编码器角度应增加，负值表示应减小。
+		float error = target - cur;
+		if (error > 180.0f) error -= 360.0f;
+		if (error < -180.0f) error += 360.0f;
+
+		if (std::fabs(error) <= kToleranceDeg) {
+			// 连续几个周期都在死区内才确认到位，减少传感器抖动导致的提前退出。
+			++settleCycles;
+			lift1.brake();
+			lift2.brake();
+			if (settleCycles >= kSettleCycles) break;
+			pros::delay(kControlPeriodMs);
+			continue;
+		}
+
+		settleCycles = 0;
+		const float absError = std::fabs(error);
+		const float minPower = std::fmin(kMinPower, maxPower);
+		const float outputPower = absError >= kDecelStartDeg
+			? maxPower
+			: minPower + (maxPower - minPower) * (absError / kDecelStartDeg);
+
+		// 当前误差为正时需要增加编码器角度，而本机构用负电机功率实现该方向。
+		const float commandPower = error > 0.0f ? -outputPower : outputPower;
+		const int32_t commandVoltage = static_cast<int32_t>(commandPower * 128.0f);
+		lift1.move_voltage(commandVoltage);
+		lift2.move_voltage(commandVoltage);
+		pros::delay(kControlPeriodMs);
+	}
+
+	stopAndHold();
 }
 
 
