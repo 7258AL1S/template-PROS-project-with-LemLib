@@ -38,6 +38,7 @@ extern pros::Motor    IntakeBack;    // 吸球电机后
 extern lemlib::V5InertialSensor  imu;
 extern lemlib::V5RotationSensor  verticalEncoder;
 extern lemlib::V5RotationSensor  horizontalEncoder; 
+extern pros::Distance frontLaser;  // 前置激光距离传感器（毫米）
 
 
 
