@@ -2,6 +2,8 @@
 
 #include "main.h"
 
+#include <cstdint>
+
 // ============================================================
 // 升降机构专用 PID（六段式：上升 3 段 + 下降 3 段）
 // ============================================================
@@ -316,6 +318,37 @@ float GetWalkTarget();
  * 不得在 opcontrol() 循环内调用。
  */
 void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist);
+
+/**
+ * @brief 前置激光距离读取函数类型
+ * @return 当前测得距离（毫米）；VEX Distance Sensor 可直接返回 get_distance()
+ */
+using LaserDistanceReader = std::int32_t (*)();
+
+/**
+ * @brief 绑定前置激光距离读取接口
+ * @param Reader 无捕获读取函数；传 nullptr 可解除绑定
+ *
+ * SmartPort 确认后，在 sensor.cpp 定义距离传感器，并在初始化阶段绑定：
+ * SetFrontLaserDistanceReader([]() { return frontLaser.get_distance(); });
+ */
+void SetFrontLaserDistanceReader(LaserDistanceReader Reader);
+
+/**
+ * @brief 前置激光距离曲线直行（Target 与 DecelDist 单位均为 mm，无 PID）
+ * @param Power     最大功率绝对值 [0, 1.0]
+ * @param Target    目标激光距离（毫米，恒为正）
+ * @param FullTime  超时时间（毫秒），到时强制刹车退出
+ * @param DecelDist 目标两侧的线性减速区（毫米，恒为正）
+ *
+ * 激光读数大于 Target 时前进，小于 Target 时后退；进入 10mm 到位窗口后刹车。
+ * 允许越过目标后低速反向纠偏。接口未绑定、参数非法、读数无效或未检测到物体
+ * （9999mm）时立即刹车退出。
+ *
+ * 注意：此函数为阻塞式，仅用于 autonomous() 中，
+ * 不得在 opcontrol() 循环内调用。
+ */
+void LaserGoForWardCurve(float Power, float Target, float FullTime, float DecelDist);
 
 /**
  * @brief 功率-角度曲线转向（IMU 航向反馈，无 PID，摩擦不敏感版）

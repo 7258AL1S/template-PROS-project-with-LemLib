@@ -1,4 +1,5 @@
 #include "main.h"
+#include "laser_distance_curve.h"
 #include "motorcontrol.h"
 #include "sensor.h"
 #include <cmath>
@@ -1288,6 +1289,54 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 	}
 
 	// 刹车
+	left_motors.brake();
+	right_motors.brake();
+}
+
+// ============================================================
+// LaserGoForWardCurve — 前置激光距离曲线直行（无 PID）
+// ============================================================
+static LaserDistanceReader frontLaserDistanceReader = nullptr;
+
+void SetFrontLaserDistanceReader(LaserDistanceReader Reader) {
+	frontLaserDistanceReader = Reader;
+}
+
+void LaserGoForWardCurve(float Power, float Target, float FullTime, float DecelDist) {
+	constexpr uint32_t kRampTimeMs = 100;
+
+	// SmartPort 尚未接入时保持失效安全，绝不在没有距离反馈时驱动底盘。
+	if (frontLaserDistanceReader == nullptr || FullTime <= 0.0f) {
+		left_motors.brake();
+		right_motors.brake();
+		return;
+	}
+
+	const uint32_t startTime = pros::millis();
+	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+	right_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+
+	// 仅 autonomous 使用：超时、禁用或失去有效读数时立即退出。
+	while (pros::millis() - startTime < FullTime && !pros::competition::is_disabled()) {
+		const std::int32_t currentDistanceMm = frontLaserDistanceReader();
+		auto command = laser_distance_curve::calculateCommand(
+			Power, currentDistanceMm, Target, DecelDist);
+
+		if (command.state != laser_distance_curve::CommandState::DRIVE) {
+			break;
+		}
+
+		// 只限制起步冲击；接近目标时的双向减速由距离曲线负责。
+		const uint32_t elapsed = pros::millis() - startTime;
+		if (elapsed < kRampTimeMs) {
+			command.power *= elapsed / static_cast<float>(kRampTimeMs);
+		}
+
+		left_motors.move(command.power);
+		right_motors.move(command.power);
+		pros::delay(3);
+	}
+
 	left_motors.brake();
 	right_motors.brake();
 }
