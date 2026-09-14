@@ -38,7 +38,7 @@ pros::Motor    IntakeBack(-21);    // 吸球电机后
 lemlib::V5InertialSensor  imu(16);                  
 lemlib::V5RotationSensor  verticalEncoder(17);      
 lemlib::V5RotationSensor  horizontalEncoder(-18);   
-pros::Distance            frontLaser(21);  // 临时端口，之后按实际接线修改
+pros::Distance            frontLaser(19);  // 临时端口，之后按实际接线修改
 
 
 
