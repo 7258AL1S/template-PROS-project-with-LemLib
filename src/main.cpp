@@ -231,7 +231,7 @@ void opcontrol() {
 		}
 
 		//爪子Intake
-		ClawControl(BtnR1, BtnY, BtnL1);
+		ClawControl(BtnR1, BtnR2, BtnL1);
 /*
 		// 俯仰轴旋转（宏激活时跳过）
 		if (!anyMacro) {

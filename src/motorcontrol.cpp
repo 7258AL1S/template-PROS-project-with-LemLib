@@ -790,8 +790,8 @@ void PickControl(bool tuggleActive){
 
 void TugglePistonControl(bool BtnA, bool BtnY){
 	// 按住时放下对应侧气缸，松开即收回。
-	Piston_tuggle.set_value(BtnA);
-	Piston_tuggle2.set_value(BtnY);
+	Piston_tuggle2.set_value(BtnA);
+	Piston_tuggle.set_value(BtnY);
 }
 
 // 夹子俯仰轴 45°/竖直 切换（气动，非阻塞）

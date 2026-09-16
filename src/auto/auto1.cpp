@@ -31,19 +31,19 @@ void auto1(int StopFlag) {
    
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(1.0,5.5,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(1.0,5.8,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
 
 
 
-    liftCmd = {42, 325, 500};
+    liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.1);
+    turnSettings.angularPID = lemlib::PID(1.34, 0.0, 0.1);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
     GoForWardCurve(1.0,14.5,1000,9.0f); 
     left_motors.move(0.1);
 	right_motors.move(0.1);
-    LiftUpDegree(-14, 358, 450);
+    LiftUpDegree(-25, 358, 450);
     
     pros::delay(200);
     lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
@@ -55,7 +55,7 @@ void auto1(int StopFlag) {
     /////
     left_motors.move(0);
 	right_motors.move(0);
-    GoForWardCurve(1.0,-6.9,1000,4.0f);
+    GoForWardCurve(1.0,-7.6,1000,4.0f);
 
     if(StopFlag == 1){
         // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
@@ -66,26 +66,26 @@ void auto1(int StopFlag) {
 
     turnSettings.angularPID = lemlib::PID(1.43, 0.0, 0.086);
     lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
-    liftCmd = {-30, 359, 300};
+    liftCmd = {-60, 359, 500};
     liftGo = true;
 
 
 
     ClawOpen();
-    ClawIntake();
+    //ClawIntake();
     GoForWardCurve(1.0,19.5,1600,9.5f);
     pros::delay(200);
     ClawClose();
     ClawStopIntake();
-    liftCmd = {70, 306, 1000};
+    liftCmd = {40, 320, 800};
     liftGo = true;
-    GoForWardCurve(1.0,1.2,500,1.0f);
+    GoForWardCurve(1.0,1.9,500,1.0f);
     turnSettings.angularPID = lemlib::PID(1.28, 0.0, 0.115);
     lemlib::turnTo(-180_stDeg, 900_msec, turnParams, turnSettings);
     GoForWardCurve(1.0,11.0,1000,7.0f); 
     left_motors.move(0.1);
 	right_motors.move(0.1);
-    LiftUpDegree(-22, 350, 500);
+    LiftUpDegree(-40, 350, 650);
 
     
     pros::delay(200);
@@ -100,8 +100,8 @@ void auto1(int StopFlag) {
     left_motors.move(0);
 	right_motors.move(0);
 
-    GoForWardCurve(1.0,-7.3,1000,3.9f); 
-    liftCmd = {-30, 359, 600};
+    GoForWardCurve(1.0,-7.6,1000,3.9f); 
+    liftCmd = {-70, 359, 650};
     liftGo = true;
 
     if(StopFlag == 2){
@@ -118,17 +118,17 @@ void auto1(int StopFlag) {
     GoForWardCurve(1.0,19.5,1600,8.5f);
     pros::delay(200);
     ClawClose();
-    ClawStopIntake();
-    liftCmd = {92, 305, 1000};
+    //ClawStopIntake();
+    liftCmd = {70, 305, 1000};
     liftGo = true;
 
     if(StopFlag == 3){//30分
-        GoForWardCurve(1.0,1.5,500,1.0f);
+        GoForWardCurve(1.0,1.9,500,1.0f);
         liftCmd = {60, 305, 300};
         liftGo = true;
         turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.106);
         lemlib::turnTo(90_stDeg, 900_msec, turnParams, turnSettings);
-        GoForWardCurve(1.0,11.0,1000,8.0f); 
+        GoForWardCurve(1.0,12.0,1000,8.0f); 
         left_motors.move(0.1);
         right_motors.move(0.1);
         LiftUpDegree(-30, 345, 1000);
@@ -144,7 +144,7 @@ void auto1(int StopFlag) {
         /////
         left_motors.move(0);
         right_motors.move(0);
-        GoForWardCurve(1.0,-7.1,1000,3.9f); 
+        GoForWardCurve(1.0,-7.6,1000,3.9f); 
         ClawClose();
     
 
