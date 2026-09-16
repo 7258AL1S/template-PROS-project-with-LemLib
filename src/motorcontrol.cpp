@@ -258,6 +258,7 @@ void LiftUpDegree(float Power, float Target, float Fulltime) {
 	constexpr float kMinPower = 8.0f;
 	constexpr uint32_t kControlPeriodMs = 10;
 	constexpr uint32_t kSettleCycles = 3;
+	constexpr uint32_t kStopBrakeMs = 150;
 
 	auto normalizeAngle = [](float angle) {
 		angle = std::fmod(angle, 360.0f);
@@ -271,8 +272,13 @@ void LiftUpDegree(float Power, float Target, float Fulltime) {
 	// 目标归一化到 [0, 360)，避免 Target + kOffset 变成 378° 等不可达值。
 	const float target = normalizeAngle(Target + kOffset);
 
-	// 直接在本函数内停止，绕过 Lift(0) 中永远为假的 uint32_t elapsed < 0 分支。
-	auto stopAndHold = []() {
+	// 停止后先电阻制动 150ms 消除惯性，再 HOLD 锁住当前位置。
+	auto brakeThenHold = []() {
+		lift1.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+		lift2.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+		lift1.brake();
+		lift2.brake();
+		pros::delay(kStopBrakeMs);
 		lift1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 		lift2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 		lift1.brake();
@@ -280,7 +286,7 @@ void LiftUpDegree(float Power, float Target, float Fulltime) {
 	};
 
 	if (maxPower < 1.0f || timeoutMs == 0) {
-		stopAndHold();
+		brakeThenHold();
 		return;
 	}
 
@@ -323,7 +329,7 @@ void LiftUpDegree(float Power, float Target, float Fulltime) {
 		pros::delay(kControlPeriodMs);
 	}
 
-	stopAndHold();
+	brakeThenHold();
 }
 
 
