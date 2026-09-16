@@ -206,7 +206,7 @@ void opcontrol() {
 		}
 
 
-		TugglePistonControl(BtnA);   // A 键切换拨片气缸
+		TugglePistonControl(BtnA, BtnY);  // A/Y 键分别按住控制左右拨片气缸
 		PickControl(BtnX);    // X 键按住驱动拨片电机
 /*
 		// 半自动宏

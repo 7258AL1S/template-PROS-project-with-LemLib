@@ -176,10 +176,11 @@ void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed);
 void PickControl(bool tuggleActive);
 
 /**
- * @brief 拨片气缸控制（A 键切换，上升沿 toggle）
- * @param BtnA A 键按下状态
+ * @brief 拨片气缸按住控制
+ * @param BtnA A 键按下状态，控制左侧气缸
+ * @param BtnY Y 键按下状态，控制右侧气缸
  */
-void TugglePistonControl(bool BtnA);
+void TugglePistonControl(bool BtnA, bool BtnY);
 
 /**
  * @brief 夹子俯仰轴 45°/竖直 切换（气动，非阻塞）
