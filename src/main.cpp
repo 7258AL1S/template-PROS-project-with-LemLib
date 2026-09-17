@@ -54,7 +54,7 @@ const char* const kAutonNames[kAutonCount] = {
     "Auto1 近场30分",
     "Auto2 远场30分",
 	"Auto3 近场20分",
-    "Auto4 远场20分",
+    "Auto4 远场10分推倒",
 	"Auto5 近场10分",
     "Auto6 远场10分",
 	"Auto7 近场AWP",
@@ -151,7 +151,7 @@ void autonomous() {
 			auto1(2);
 			break;
 		case 4:
-			auto2(2);
+			auto2(4);
 			break;
 		case 5:
 			auto1(1);

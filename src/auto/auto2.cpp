@@ -31,11 +31,11 @@ void auto2(int StopFlag) {
    
 
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(1.0,6.0,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(1.0,6.2,1000,3.9f);        // 新版：Power, Target, FullTime, DecelDist
 
 
 
-    liftCmd = {38, 325, 500};
+    liftCmd = {32, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
     turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.086);
@@ -43,7 +43,7 @@ void auto2(int StopFlag) {
     GoForWardCurve(1.0,14.6,1000,9.0f); 
     left_motors.move(0.1);
 	right_motors.move(0.1);
-    LiftUpDegree(-14, 358, 450);
+    LiftUpDegree(-40, 358, 550);
     
     pros::delay(200);
     lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
@@ -55,6 +55,27 @@ void auto2(int StopFlag) {
     /////
     left_motors.move(0);
 	right_motors.move(0);
+
+
+    if(StopFlag == 4){
+        GoForWardCurve(1.0,-11,1100,9.0f); 
+        turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.086);
+        lemlib::turnTo(0_stDeg, 900_msec, turnParams, turnSettings);
+        GoForWardCurve(1.0,14,1300,7.0f); 
+        turnSettings.angularPID = lemlib::PID(1.43, 0.0, 0.086);
+        lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
+
+        ClawClose();
+        // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
+        autoActive = false;
+        pros::delay(100);
+        return;
+    }
+
+
+
+
+
     GoForWardCurve(1.0,-5.7,1000,4.0f);
 
     if(StopFlag == 1){
@@ -77,7 +98,7 @@ void auto2(int StopFlag) {
     pros::delay(100);
     ClawClose();
     //ClawStopIntake();
-    liftCmd = {50, 315, 800};
+    liftCmd = {45, 315, 800};
     liftGo = true;
     GoForWardCurve(1.0,2,500,1.0f);
     turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.1);
@@ -85,7 +106,7 @@ void auto2(int StopFlag) {
     GoForWardCurve(1.0,12.4,1000,8.0f); 
     left_motors.move(0.1);
 	right_motors.move(0.1);
-    LiftUpDegree(-25, 350, 500);
+    LiftUpDegree(-35, 350, 500);
     ClawOpen();
     pros::delay(100);
     /////

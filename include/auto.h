@@ -14,7 +14,7 @@
 #include "auto_common.h"
 /**
  * @brief 开局右转
- * @param StopFlag 1->1pin  2->2pin  3->3pin
+ * @param StopFlag 1->1pin  2->2pin  3->30分  4->AWP  5->30分后衔接AutoSkill
  */
 void auto1(int StopFlag);
 /**

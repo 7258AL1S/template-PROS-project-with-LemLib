@@ -72,7 +72,7 @@ void auto1(int StopFlag) {
 
 
     ClawOpen();
-    //ClawIntake();
+    ClawIntake();
     GoForWardCurve(1.0,19.5,1600,9.5f);
     pros::delay(200);
     ClawClose();
@@ -121,8 +121,7 @@ void auto1(int StopFlag) {
     //ClawStopIntake();
     liftCmd = {70, 305, 1000};
     liftGo = true;
-
-    if(StopFlag == 3){//30分
+    if(StopFlag == 3 || StopFlag == 5){//30分；5用于继续衔接AutoSkill
         GoForWardCurve(1.0,1.9,500,1.0f);
         liftCmd = {60, 305, 300};
         liftGo = true;
@@ -149,7 +148,7 @@ void auto1(int StopFlag) {
     
 
         
-    } else {//AWP
+    } else if(StopFlag == 4){//AWP
         pros::delay(100);
         GoForWardCurve(1.0,-16,1600,8.0f);
         turnSettings.angularPID = lemlib::PID(1.22, 0.0, 0.12);
@@ -174,6 +173,11 @@ void auto1(int StopFlag) {
         ClawClose();
 
     }
+    if (StopFlag == 5) {
+        // AutoSkill 将继续使用当前后台任务，并在完整路线结束后统一关闭。
+        return;
+    }
+
     // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
     autoActive = false;
     pros::delay(100);
