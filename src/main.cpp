@@ -88,6 +88,8 @@ void selectAuton() {
         if (!lastA && a) {
             auton = selected + 1;
             // A 确认后，在名称后显示 OK，2 秒后清空手柄文字
+            master.clear_line(0);
+            pros::delay(100);
             master.print(0, 0, "%s OK", kAutonNames[selected]);
             pros::delay(2000);
             master.clear();
@@ -99,9 +101,18 @@ void selectAuton() {
         lastA     = a;
 
         if (displayed != selected) {
+            // 控制器屏幕更新较慢，清屏后需要留出发送时间再写入新名称。
+            master.clear_line(0);
+            pros::delay(100);
             master.set_text(0, 0, kAutonNames[selected]);
-            master.set_text(1, 0, "<L/R> switch");
-            master.set_text(2, 0, "A = Confirm");
+
+            // 提示文字只在首次显示时写入，避免每次切换都占用控制器通信。
+            if (displayed == -1) {
+                pros::delay(100);
+                master.set_text(1, 0, "<L/R> switch");
+                pros::delay(100);
+                master.set_text(2, 0, "A = Confirm");
+            }
             displayed = selected;
         }
 
