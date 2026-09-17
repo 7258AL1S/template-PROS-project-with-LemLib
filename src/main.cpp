@@ -181,6 +181,7 @@ void autonomous() {
  */
 void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
+	TugglePistonControl(false, false, master.get_digital(DIGITAL_DOWN), true);
 	left_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 	right_motors.setBrakeMode(lemlib::BrakeMode::COAST);
 //	left_motors.move(0);
@@ -211,13 +212,14 @@ void opcontrol() {
 		int BtnB  = master.get_digital(DIGITAL_B);
 		int BtnY  = master.get_digital(DIGITAL_Y);
 		int BtnUp = master.get_digital(DIGITAL_UP);
+		int BtnDown = master.get_digital(DIGITAL_DOWN);
 
 		if (!ChassisLock(BtnUp)) {
 			drive(dir, turn);
 		}
 
 
-		TugglePistonControl(BtnA, BtnY);  // A/Y 键分别按住控制左右拨片气缸
+		TugglePistonControl(BtnA, BtnY, BtnDown);  // Down 切换常伸出，否则 A/Y 按住控制
 		PickControl(BtnX);    // X 键按住驱动拨片电机
 /*
 		// 半自动宏

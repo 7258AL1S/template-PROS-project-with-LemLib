@@ -176,11 +176,13 @@ void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed);
 void PickControl(bool tuggleActive);
 
 /**
- * @brief 拨片气缸按住控制
+ * @brief 拨片气缸 Down 切换常伸出模式，否则由 A/Y 按住控制（非阻塞）
  * @param BtnA A 键按下状态，控制左侧气缸
  * @param BtnY Y 键按下状态，控制右侧气缸
+ * @param BtnDown Down 键原始状态，上升沿切换两个气缸的常伸出模式
+ * @param Reset 手动阶段开始时复位模式与按键边沿，并缩回两个气缸
  */
-void TugglePistonControl(bool BtnA, bool BtnY);
+void TugglePistonControl(bool BtnA, bool BtnY, bool BtnDown, bool Reset = false);
 
 /**
  * @brief 夹子俯仰轴 45°/竖直 切换（气动，非阻塞）

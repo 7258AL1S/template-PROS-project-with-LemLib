@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source-level contract checks for the independent tuggle piston controls."""
+"""Source-level contract checks for Down mode and independent A/Y controls."""
 
 from pathlib import Path
 
@@ -24,13 +24,26 @@ def function_body(source: str, signature: str) -> str:
     raise AssertionError("function body is not closed")
 
 
-expected_signature = "void TugglePistonControl(bool BtnA, bool BtnY)"
-assert expected_signature in HEADER
+expected_signature = "void TugglePistonControl(bool BtnA, bool BtnY, bool BtnDown, bool Reset)"
+assert expected_signature[:-1] + " = false);" in HEADER
 assert expected_signature in IMPLEMENTATION
 
 body = function_body(IMPLEMENTATION, expected_signature)
-assert "Piston_tuggle.set_value(BtnA);" in body
-assert "Piston_tuggle2.set_value(BtnY);" in body
-assert "pistonActive" not in body
-assert "prevA" not in body
-assert "TugglePistonControl(BtnA, BtnY);" in MAIN
+assert "static bool extendedMode = false;" in body
+assert "if (!prevDown && BtnDown)" in body
+assert "extendedMode = !extendedMode;" in body
+assert "prevDown = BtnDown;" in body
+assert "Piston_tuggle.set_value(extendedMode || BtnY);" in body
+assert "Piston_tuggle2.set_value(extendedMode || BtnA);" in body
+reset_body = function_body(body, "if (Reset)")
+assert "extendedMode = false;" in reset_body
+assert "prevDown = BtnDown;" in reset_body
+assert "Piston_tuggle.set_value(false);" in reset_body
+assert "Piston_tuggle2.set_value(false);" in reset_body
+assert "return;" in reset_body
+assert "pros::delay" not in body
+assert "TugglePistonControl(BtnA, BtnY, BtnDown);" in MAIN
+assert "TugglePistonControl(false, false, master.get_digital(DIGITAL_DOWN), true);" in MAIN
+assert "int BtnDown = master.get_digital(DIGITAL_DOWN);" in MAIN
+assert "ChassisLock(BtnUp)" in MAIN
+print("PASS: Down toggle, A/Y mapping, phase reset, and Up chassis lock source contracts")

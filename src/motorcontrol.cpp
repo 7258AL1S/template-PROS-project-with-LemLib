@@ -788,10 +788,26 @@ void PickControl(bool tuggleActive){
 	}
 }
 
-void TugglePistonControl(bool BtnA, bool BtnY){
-	// 按住时放下对应侧气缸，松开即收回。
-	Piston_tuggle2.set_value(BtnA);
-	Piston_tuggle.set_value(BtnY);
+void TugglePistonControl(bool BtnA, bool BtnY, bool BtnDown, bool Reset){
+	static bool extendedMode = false;
+	static bool prevDown = false;
+
+	if (Reset) {
+		extendedMode = false;
+		prevDown = BtnDown;
+		Piston_tuggle2.set_value(false);
+		Piston_tuggle.set_value(false);
+		return;
+	}
+
+	if (!prevDown && BtnDown) {
+		extendedMode = !extendedMode;
+	}
+	prevDown = BtnDown;
+
+	// 伸出模式屏蔽 A/Y；退出后立即按当前按住状态接管。
+	Piston_tuggle2.set_value(extendedMode || BtnA);
+	Piston_tuggle.set_value(extendedMode || BtnY);
 }
 
 // 夹子俯仰轴 45°/竖直 切换（气动，非阻塞）
