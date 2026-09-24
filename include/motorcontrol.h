@@ -323,6 +323,19 @@ float GetWalkTarget();
 void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist);
 
 /**
+ * @brief 定位轮距离曲线直行，使用 IMU 保持进入函数时的航向
+ * @param Power     最大功率绝对值 [0, 1.0]
+ * @param Target    相对行驶距离（英寸），正=前进，负=后退
+ * @param FullTime  超时时间（毫秒）
+ * @param DecelDist 减速区长度（英寸，必须大于 0）
+ *
+ * 距离曲线与 GoForWardCurve 相同；左右轮按 IMU 航向误差差速修正，
+ * 不会为了纠偏反转行驶方向。每次调用重新锁定当前航向，不重置 IMU。
+ * 仅 autonomous 使用，不得在 opcontrol 循环内调用。
+ */
+void GoForWardCurveIMU(float Power, float Target, float FullTime, float DecelDist);
+
+/**
  * @brief 前置激光距离读取函数类型
  * @return 当前测得距离（毫米）；VEX Distance Sensor 可直接返回 get_distance()
  */

@@ -1307,6 +1307,74 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 	right_motors.brake();
 }
 
+// 仅 autonomous 使用，不得在 opcontrol 循环内调用。
+void GoForWardCurveIMU(float Power, float Target, float FullTime, float DecelDist) {
+	constexpr float kWheelCircumference = 6.2831853f;
+	constexpr float kBreakawayPower = 0.02f;
+	constexpr float kArrivalDist = 0.4f;
+	constexpr float kHeadingKp = 0.02f;          // 功率/度，需在实车上微调
+	constexpr float kMaxHeadingPower = 0.2f;    // 限制转向对直行的影响
+	constexpr uint32_t kRampTimeMs = 100;
+
+	const float maxPower = fminf(fabs(Power), 1.0f);
+	if (!std::isfinite(Power) || maxPower <= 0.0f ||
+	    !std::isfinite(Target) || Target == 0.0f ||
+	    !std::isfinite(FullTime) || FullTime <= 0.0f ||
+	    !std::isfinite(DecelDist) || DecelDist <= 0.0f) {
+		left_motors.brake();
+		right_motors.brake();
+		return;
+	}
+
+	const float startAngle = static_cast<float>(horizontalEncoder.getAngle().convert(deg));
+	const float heading = static_cast<float>(imu.getRotation().convert(deg));
+	if (!std::isfinite(startAngle) || !std::isfinite(heading)) {
+		left_motors.brake();
+		right_motors.brake();
+		return;
+	}
+
+	walkTargetDisplay = Target;
+	walkDistDisplay = 0.0f;
+	const float dir = Target > 0.0f ? 1.0f : -1.0f;
+	const uint32_t startTime = pros::millis();
+	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+	right_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+
+	// 超时、禁用、到位、过冲或传感器读数异常时退出；每拍让出执行时间。
+	while (pros::millis() - startTime < FullTime && !pros::competition::is_disabled()) {
+		const float curAngle = static_cast<float>(horizontalEncoder.getAngle().convert(deg));
+		const float curHeading = static_cast<float>(imu.getRotation().convert(deg));
+		if (!std::isfinite(curAngle) || !std::isfinite(curHeading)) break;
+
+		const float curDist = (curAngle - startAngle) / 360.0f * kWheelCircumference;
+		if (!std::isfinite(curDist)) break;
+		walkDistDisplay = curDist;
+		const float err = Target - curDist;
+		const float absErr = fabs(err);
+		if (absErr < kArrivalDist || (dir * err) < 0.0f) break;
+
+		float out = dir * fminf(maxPower, fmaxf(kBreakawayPower, maxPower * absErr / DecelDist));
+		const uint32_t elapsed = pros::millis() - startTime;
+		if (elapsed < kRampTimeMs) out *= elapsed / static_cast<float>(kRampTimeMs);
+
+		// 正航向误差要求逆时针：左减、右加；倒车时仍用相同的转向符号。
+		const float headingError = std::remainder(heading - curHeading, 360.0f);
+		if (!std::isfinite(headingError)) break;
+		const float correctionLimit = fminf(kMaxHeadingPower, fabs(out) * 0.5f);
+		const float correction = fmaxf(-correctionLimit,
+		                               fminf(kHeadingKp * headingError, correctionLimit));
+		// 给较快一侧留出纠偏余量，同时两侧功率不超过 Power、不反向。
+		const float base = dir * fminf(fabs(out), maxPower - fabs(correction));
+		left_motors.move(base - correction);
+		right_motors.move(base + correction);
+		pros::delay(10);
+	}
+
+	left_motors.brake();
+	right_motors.brake();
+}
+
 // ============================================================
 // LaserGoForWardCurve — 前置激光距离曲线直行（无 PID）
 // ============================================================
