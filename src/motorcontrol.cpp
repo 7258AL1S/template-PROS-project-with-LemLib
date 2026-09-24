@@ -1308,7 +1308,8 @@ void GoForWardCurve(float Power, float Target, float FullTime, float DecelDist) 
 }
 
 // 仅 autonomous 使用，不得在 opcontrol 循环内调用。
-void GoForWardCurveIMU(float Power, float Target, float FullTime, float DecelDist) {
+void GoForWardCurveIMU(float Power, float Target, float FullTime, float DecelDist,
+	                   std::optional<Angle> Heading) {
 	constexpr float kWheelCircumference = 6.2831853f;
 	constexpr float kBreakawayPower = 0.02f;
 	constexpr float kArrivalDist = 0.4f;
