@@ -1328,7 +1328,8 @@ void GoForWardCurveIMU(float Power, float Target, float FullTime, float DecelDis
 	}
 
 	const float startAngle = static_cast<float>(horizontalEncoder.getAngle().convert(deg));
-	const float heading = static_cast<float>(imu.getRotation().convert(deg));
+	const float heading = static_cast<float>(
+		(Heading ? *Heading : imu.getRotation()).convert(deg));
 	if (!std::isfinite(startAngle) || !std::isfinite(heading)) {
 		left_motors.brake();
 		right_motors.brake();
@@ -1418,6 +1419,72 @@ void LaserGoForWardCurve(float Power, float Target, float FullTime, float DecelD
 		left_motors.move(command.power);
 		right_motors.move(command.power);
 		pros::delay(3);
+	}
+
+	left_motors.brake();
+	right_motors.brake();
+}
+
+// 仅 autonomous 使用，不得在 opcontrol 循环内调用。
+void LaserGoForWardCurveIMU(float Power, float Target, float FullTime, float DecelDist,
+	                         std::optional<Angle> Heading) {
+	constexpr float kHeadingKp = 0.02f;       // 功率/度，需在实车上微调
+	constexpr float kMaxHeadingPower = 0.2f; // 限制 IMU 纠偏对直行的影响
+	constexpr uint32_t kRampTimeMs = 100;
+
+	const float maxPower = fminf(fabs(Power), 1.0f);
+	if (frontLaserDistanceReader == nullptr ||
+	    !std::isfinite(Power) || maxPower <= 0.0f ||
+	    !std::isfinite(Target) || Target <= 0.0f ||
+	    !std::isfinite(FullTime) || FullTime <= 0.0f ||
+	    !std::isfinite(DecelDist) || DecelDist <= 0.0f) {
+		left_motors.brake();
+		right_motors.brake();
+		return;
+	}
+
+	const float heading = static_cast<float>(
+		(Heading ? *Heading : imu.getRotation()).convert(deg));
+	if (!std::isfinite(heading)) {
+		left_motors.brake();
+		right_motors.brake();
+		return;
+	}
+
+	const uint32_t startTime = pros::millis();
+	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+	right_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+
+	// 超时、禁用、到位、失去有效读数或传感器异常时退出。
+	while (pros::millis() - startTime < FullTime && !pros::competition::is_disabled()) {
+		const std::int32_t currentDistanceMm = frontLaserDistanceReader();
+		auto command = laser_distance_curve::calculateCommand(
+			Power, currentDistanceMm, Target, DecelDist);
+		if (command.state != laser_distance_curve::CommandState::DRIVE ||
+		    !std::isfinite(command.power)) {
+			break;
+		}
+
+		const uint32_t elapsed = pros::millis() - startTime;
+		if (elapsed < kRampTimeMs) {
+			command.power *= elapsed / static_cast<float>(kRampTimeMs);
+		}
+
+		const float currentHeading = static_cast<float>(imu.getRotation().convert(deg));
+		if (!std::isfinite(currentHeading)) break;
+
+		// 正航向误差要求逆时针：左减、右加；倒车时仍用相同的转向符号。
+		const float headingError = std::remainder(heading - currentHeading, 360.0f);
+		if (!std::isfinite(headingError)) break;
+		const float correctionLimit = fminf(kMaxHeadingPower, fabs(command.power) * 0.5f);
+		const float correction = fmaxf(-correctionLimit,
+		                               fminf(kHeadingKp * headingError, correctionLimit));
+		// 给较快一侧留出纠偏余量，同时两侧功率不超过 Power、不反向。
+		const float direction = command.power >= 0.0f ? 1.0f : -1.0f;
+		const float base = direction * fminf(fabs(command.power), maxPower - fabs(correction));
+		left_motors.move(base - correction);
+		right_motors.move(base + correction);
+		pros::delay(10);
 	}
 
 	left_motors.brake();

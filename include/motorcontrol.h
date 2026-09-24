@@ -372,6 +372,22 @@ void SetFrontLaserDistanceReader(LaserDistanceReader Reader);
 void LaserGoForWardCurve(float Power, float Target, float FullTime, float DecelDist);
 
 /**
+ * @brief 前置激光距离曲线直行，使用 IMU 保持指定航向
+ * @param Power     最大功率绝对值 [0, 1.0]
+ * @param Target    目标激光距离（毫米，恒为正）
+ * @param FullTime  超时时间（毫秒）
+ * @param DecelDist 目标两侧的线性减速区（毫米，恒为正）
+ * @param Heading   可选的绝对 IMU 航向；省略时锁定进入函数时的航向
+ *
+ * 激光传感器负责距离闭环，IMU 负责左右轮差速纠偏。Heading 使用
+ * imu.getRotation() 的角度基准，例如 0_stDeg；不会重置 IMU。
+ * 接口未绑定、参数非法、读数无效、超时或机器人被禁用时立即刹车退出。
+ * 仅 autonomous 使用，不得在 opcontrol 循环内调用。
+ */
+void LaserGoForWardCurveIMU(float Power, float Target, float FullTime, float DecelDist,
+                            std::optional<Angle> Heading = std::nullopt);
+
+/**
  * @brief 功率-角度曲线转向（IMU 航向反馈，无 PID，摩擦不敏感版）
  * @param Power    最大功率绝对值 [0, 1.0]，方向自动取最短路径
  * @param Target   相对转角（度），正=逆时针，以进入函数时的航向为基准
