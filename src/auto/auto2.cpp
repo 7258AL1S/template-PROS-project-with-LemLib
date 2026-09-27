@@ -35,17 +35,20 @@ void auto2(int StopFlag) {
 
 
 
-    liftCmd = {32, 325, 500};
+    liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.086);
+    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
     lemlib::turnTo(90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,14.6,1000,9.0f); 
-    left_motors.move(0.1);
-	right_motors.move(0.1);
-    LiftUpDegree(-40, 358, 550);
+    GoForWardCurve(1.0,14.3,1000,9.0f); 
+    left_motors.move(0.2);
+	right_motors.move(0.2);
+    LiftUpDegree(-60, 352, 550);
     
     pros::delay(200);
+    ClawOpen();
+    LiftUpDegree(40, 345, 250);
+    pros::delay(300);
     lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	lift1.brake();
@@ -61,7 +64,7 @@ void auto2(int StopFlag) {
         GoForWardCurve(1.0,-11,1100,9.0f); 
         turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.086);
         lemlib::turnTo(0_stDeg, 900_msec, turnParams, turnSettings);
-        GoForWardCurve(1.0,14,1300,7.0f); 
+        GoForWardCurve(1.0,5,1300,2.0f); 
         turnSettings.angularPID = lemlib::PID(1.43, 0.0, 0.086);
         lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
 

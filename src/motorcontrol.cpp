@@ -807,6 +807,7 @@ void TugglePistonControl(bool BtnA, bool BtnY, bool BtnDown, bool Reset){
 
 	// 伸出模式屏蔽 A/Y；退出后立即按当前按住状态接管。
 	Piston_tuggle2.set_value(extendedMode || BtnA);
+	
 	Piston_tuggle.set_value(extendedMode || BtnY);
 }
 
