@@ -38,16 +38,16 @@ void auto1(int StopFlag) {
     liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.33, 0.0, 0.1);
+    turnSettings.angularPID = lemlib::PID(1.35, 0.0, 0.1);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
-    GoForWardCurve(1.0,14.3,1000,9.0f); 
+    GoForWardCurve(1.0,13.8,1000,9.0f); 
     left_motors.move(0.2);
 	right_motors.move(0.2);
     LiftUpDegree(-60, 352, 550);
     
     pros::delay(200);
     ClawOpen();
-    LiftUpDegree(40, 345, 250);
+    LiftUpDegree(35, 345, 250);
     pros::delay(300);
     /////
     left_motors.move(0);
@@ -70,13 +70,13 @@ void auto1(int StopFlag) {
 
     ClawOpen();
     ClawIntake();
-    GoForWardCurveIMU(1.0,18.7,1600,9.5f);
+    GoForWardCurveIMU(1.0,19.4,1600,9.5f);
     pros::delay(100);
     ClawClose();
 
     liftCmd = {40, 320, 800};
     liftGo = true;
-    GoForWardCurve(1.0,1.3,500,1.0f);
+    GoForWardCurve(1.0,2.7,600,1.0f);
     turnSettings.angularPID = lemlib::PID(1.28, 0.0, 0.115);
     lemlib::turnTo(-180_stDeg, 900_msec, turnParams, turnSettings);
     GoForWardCurveIMU(1.0,11.0,1000,7.0f); 
@@ -97,7 +97,7 @@ void auto1(int StopFlag) {
     left_motors.move(0);
 	right_motors.move(0);
 
-    GoForWardCurve(1.0,-14,1200,3.9f); ///////
+    GoForWardCurve(1.0,-8.3,1200,3.9f); ///////
     liftCmd = {-70, 359, 650};
     liftGo = true;
 
@@ -113,35 +113,31 @@ void auto1(int StopFlag) {
     lemlib::turnTo(-135_stDeg, 900_msec, turnParams, turnSettings);
     ClawOpen();
     ClawIntake();
-    GoForWardCurve(1.0,19.5,1600,8.5f);
+    GoForWardCurve(1.0,20.0,1600,8.5f);
     pros::delay(200);
     ClawClose();
     //ClawStopIntake();
     liftCmd = {70, 305, 1000};
     liftGo = true;
     if(StopFlag == 3 || StopFlag == 5){//30分；5用于继续衔接AutoSkill
-        GoForWardCurve(1.0,1.8,700,1.0f);
+        GoForWardCurve(1.0,2.1,700,1.0f);
         liftCmd = {60, 305, 300};
         liftGo = true;
         turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.106);
         lemlib::turnTo(90_stDeg, 900_msec, turnParams, turnSettings);
-        GoForWardCurve(1.0,12.0,1000,8.0f); 
+        GoForWardCurve(1.0,11.5,1000,8.0f); 
         left_motors.move(0.2);
         right_motors.move(0.2);
-        LiftUpDegree(-30, 345, 1000);
+        LiftUpDegree(-30, 345, 900);
 
-        pros::delay(200);
-        lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-        lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-        lift1.brake();
-        lift2.brake();
+        
         ClawOpen();
         pros::delay(100);
 
         /////
         left_motors.move(0);
         right_motors.move(0);
-        GoForWardCurve(1.0,-7.6,1000,3.9f); 
+        GoForWardCurve(1.0,-7.0,1000,3.9f); 
         ClawClose();
     
 
