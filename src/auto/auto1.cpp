@@ -45,14 +45,14 @@ void auto1(int StopFlag) {
 	right_motors.move(0.2);
     LiftUpDegree(-60, 352, 550);
     
-    pros::delay(200);
+    pros::delay(100);
     ClawOpen();
     LiftUpDegree(35, 345, 250);
-    pros::delay(300);
+    pros::delay(100);
     /////
     left_motors.move(0);
 	right_motors.move(0);
-    GoForWardCurveIMU(1.0,-7.6,1000,4.0f);
+    GoForWardCurveIMU(1.0,-7.7,1000,4.0f);
 
     if(StopFlag == 1){
         // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
@@ -70,7 +70,7 @@ void auto1(int StopFlag) {
 
     ClawOpen();
     ClawIntake();
-    GoForWardCurveIMU(1.0,19.4,1600,9.5f);
+    GoForWardCurveIMU(1.0,19.5,1600,9.5f);
     pros::delay(100);
     ClawClose();
 
@@ -85,7 +85,7 @@ void auto1(int StopFlag) {
     LiftUpDegree(-40, 350, 650);
 
     
-    pros::delay(200);
+    pros::delay(100);
     lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	lift2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	lift1.brake();
@@ -97,7 +97,7 @@ void auto1(int StopFlag) {
     left_motors.move(0);
 	right_motors.move(0);
 
-    GoForWardCurve(1.0,-8.3,1200,3.9f); ///////
+    GoForWardCurve(1.0,-8.0,1200,3.9f); ///////
     liftCmd = {-70, 359, 650};
     liftGo = true;
 
@@ -113,14 +113,14 @@ void auto1(int StopFlag) {
     lemlib::turnTo(-135_stDeg, 900_msec, turnParams, turnSettings);
     ClawOpen();
     ClawIntake();
-    GoForWardCurve(1.0,20.0,1600,8.5f);
-    pros::delay(200);
+    GoForWardCurve(1.0,20.6,1600,8.5f);
+    pros::delay(100);
     ClawClose();
     //ClawStopIntake();
     liftCmd = {70, 305, 1000};
     liftGo = true;
     if(StopFlag == 3 || StopFlag == 5){//30分；5用于继续衔接AutoSkill
-        GoForWardCurve(1.0,2.1,700,1.0f);
+        GoForWardCurve(1.0,2.7,700,1.0f);
         liftCmd = {60, 305, 300};
         liftGo = true;
         turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.106);
@@ -137,8 +137,10 @@ void auto1(int StopFlag) {
         /////
         left_motors.move(0);
         right_motors.move(0);
-        GoForWardCurve(1.0,-7.0,1000,3.9f); 
-        ClawClose();
+        if (StopFlag == 3) {
+            GoForWardCurve(1.0,-7.3,1000,3.9f);
+        }
+  
     
 
         
