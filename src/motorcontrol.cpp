@@ -735,6 +735,12 @@ void ClawOuttake(){
 	Claw_Right.move(70);
 }
 
+void ClawRevise(bool Forward){
+	// 沿用进出爪功率，两侧电机按参数选择相反转向。
+	Claw_Left.move(Forward ? 70 : -70);
+	Claw_Right.move(Forward ? -70 : 70);
+}
+
 void ClawStopIntake(){
 	// 停止进爪电机，BRAKE 刹车
 	Claw_Left.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);

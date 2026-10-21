@@ -164,6 +164,8 @@ void ClawCloseSimple();
 
 void ClawIntake();
 void ClawOuttake();
+// true：左正转、右反转；false：左反转、右正转，功率为 70。
+void ClawRevise(bool Forward);
 void ClawStopIntake();
 
 /**
