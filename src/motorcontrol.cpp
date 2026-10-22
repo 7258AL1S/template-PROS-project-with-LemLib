@@ -737,8 +737,8 @@ void ClawOuttake(){
 
 void ClawRevise(bool Forward){
 	// 沿用进出爪功率，两侧电机按参数选择相反转向。
-	Claw_Left.move(Forward ? 70 : -70);
-	Claw_Right.move(Forward ? -70 : 70);
+	Claw_Left.move(Forward ? 55 : -55);
+	Claw_Right.move(Forward ? 55 : -55);
 }
 
 void ClawStopIntake(){
@@ -762,7 +762,8 @@ void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed){
 		ClawIntake();
 	}
 	else if(OuttakePressed){
-		ClawOuttake();
+		//ClawOuttake();
+		ClawRevise(false);
 	}
 	else{
 		Claw_Left.move(0);
