@@ -49,3 +49,4 @@ pros::ADIDigitalOut Piston_tuggle('A');  // 翻筒气动
 pros::ADIDigitalOut Piston_tuggle2('B');  // 翻筒气动
 pros::ADIDigitalOut Piston_claw('H');  // 爪子气动
 pros::ADIDigitalOut Piston_pitch45('C');  // 夹子俯仰 45° 气动
+pros::ADIDigitalOut Piston_ClawDown('D');  // 下方爪子气动

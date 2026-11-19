@@ -724,6 +724,14 @@ void ClawCloseSimple(){
 }
 
 
+void ClawDownOpen() {
+	Piston_ClawDown.set_value(true);
+}
+
+void ClawDownClose() {
+	Piston_ClawDown.set_value(false);
+}
+
 void ClawIntake(){
 	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	Claw_Left.move(70);

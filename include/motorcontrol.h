@@ -161,6 +161,10 @@ void ClawOpenSimple();
 
 void ClawCloseSimple();
 
+// 下方爪子气动开闭控制。
+void ClawDownOpen();
+void ClawDownClose();
+
 
 void ClawIntake();
 void ClawOuttake();
