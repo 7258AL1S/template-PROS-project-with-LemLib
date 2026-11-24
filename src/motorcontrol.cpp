@@ -683,6 +683,7 @@ static bool     clawStateInit  = true;    // 首次调用标志
 int ClawTime = 300; // 爪子开关脉冲时间（毫秒）
 
 void ClawOpen(){
+	/*
 	if (!clawTargetOpen || clawStateInit) {
 		clawTargetOpen = true;
 		clawPulseStart = pros::millis();
@@ -695,12 +696,14 @@ void ClawOpen(){
 		//Claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 		//Claw.brake();
 		Claw.move(10);
-	}
+	}*/
+	ClawOpenSimple();
 }
 
 
 void ClawClose(){
 
+	/*
 	if (clawTargetOpen || clawStateInit) {
 		clawTargetOpen = false;
 		clawPulseStart = pros::millis();
@@ -713,16 +716,20 @@ void ClawClose(){
 		Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 		Claw.brake();
 	}
+
+	*/
+	ClawCloseSimple();
 }
 
 void ClawOpenSimple(){
-	Claw.move(127);
+	Piston_claw.set_value(true);   // 输出高电平
 }
 void ClawCloseSimple(){
-	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-	Claw.brake();
+	//Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	//Claw.brake();
+	
+	Piston_claw.set_value(false);  // 输出低电平
 }
-
 
 void ClawDownOpen() {
 	Piston_ClawDown.set_value(true);
@@ -732,10 +739,11 @@ void ClawDownClose() {
 	Piston_ClawDown.set_value(false);
 }
 
+
 void ClawIntake(){
 	Claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-	Claw_Left.move(70);
-	Claw_Right.move(-70);
+	Claw_Left.move(120);
+	Claw_Right.move(-10);
 }
 
 void ClawOuttake(){
@@ -1070,6 +1078,7 @@ void IntakeFrontOnly(int BtnPressed){
 
 void IntakeControl(int BtnIntakeAll, int BtnIntakeFront,int BtnIntakeReverse){
 	if(BtnIntakeAll){
+		IntakeF.set_value(false);
 		IntakeFront.move(100);
 		IntakeBack.move(100);
 	} else if(BtnIntakeFront){
@@ -1080,6 +1089,7 @@ void IntakeControl(int BtnIntakeAll, int BtnIntakeFront,int BtnIntakeReverse){
 		IntakeBack.move(-100);
 	}
 	else {
+		IntakeF.set_value(true);
 		IntakeFront.move(0);
 		IntakeBack.move(0);
 	}

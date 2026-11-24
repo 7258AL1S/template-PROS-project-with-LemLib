@@ -213,13 +213,14 @@ void opcontrol() {
 		int BtnY  = master.get_digital(DIGITAL_Y);
 		int BtnUp = master.get_digital(DIGITAL_UP);
 		int BtnDown = master.get_digital(DIGITAL_DOWN);
+		int BtnRight = master.get_digital(DIGITAL_RIGHT);
 
-		if (!ChassisLock(BtnUp)) {
+		if (!ChassisLock(BtnRight)) {
 			drive(dir, turn);
 		}
 
 
-		TugglePistonControl(BtnA, BtnY, BtnDown);  // Down 切换常伸出，否则 A/Y 按住控制
+		TugglePistonControl(BtnB, BtnY, BtnDown);  // Down 切换常伸出，否则 A/Y 按住控制
 		PickControl(BtnX);    // X 键按住驱动拨片电机
 /*
 		// 半自动宏
@@ -235,7 +236,7 @@ void opcontrol() {
 		xWasActive = xActive;
 */
 		bool anyMacro = 0;
-		bool clawAt45 = ClawPitch45(BtnB);
+		bool clawAt45 = ClawPitch45(BtnA);
 
 		// 升降（tuggle 激活时抑制升降输入，宏激活时由宏内部控制）
 		if (!anyMacro) {
@@ -245,7 +246,11 @@ void opcontrol() {
 
 		//爪子Intake
 		ClawControl(BtnR1, BtnR2, BtnL1);
-/*
+
+		IntakeControl(BtnL2, 0, 0);
+		//if(BtnL2) ClawDownOpen();
+		//else ClawDownClose();
+		/*
 		// 俯仰轴旋转（宏激活时跳过）
 		if (!anyMacro) {
 			static bool bPrev = false;

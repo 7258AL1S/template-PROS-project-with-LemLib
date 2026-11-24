@@ -50,3 +50,4 @@ extern pros::ADIDigitalOut Piston_tuggle2;  // 翻筒气动
 extern pros::ADIDigitalOut Piston_claw;  // 爪子气动
 extern pros::ADIDigitalOut Piston_pitch45;  // 夹子俯仰 45° 气动
 extern pros::ADIDigitalOut Piston_ClawDown;  // 下方爪子气动
+extern pros::ADIDigitalOut IntakeF;  

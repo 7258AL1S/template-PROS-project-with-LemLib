@@ -8,7 +8,7 @@ void auto_skill(int StopFlag) {
     liftCmd = {-85, 359, 2000};
     liftGo = true;
 
-    GoForWardCurve(1.0, -19.7, 1200, 11.5f);
+    GoForWardCurve(1.0, -19.8, 1200, 11.5f);
     ClawOpen();
 
     lemlib::TurnToParams turnParams;
@@ -25,16 +25,16 @@ void auto_skill(int StopFlag) {
     };
 
     const ImportCycle importCycles[] = {
-        {{65, 275, 1000}, {-90, 359, 2000}, false},
-        {{85, 258, 1100}, {-100, 359, 2500}, false},
-        {{90, 250, 1200}, {-100, 359, 2500}, false},
+        {{80, 275, 1000}, {-90, 359, 2000}, false},
+        {{100, 258, 1100}, {-100, 359, 2500}, false},
+        {{100, 230, 1500}, {-100, 359, 2500}, false},
     };
 
     const int IntakeLaser = 172;// 吸入导入的距离
-    const int PutLaser = 369; //放导入的距离
+    const int PutLaser = 364; //放导入的距离
     //所有转的p都加了0.5
-    turnSettings90.angularPID = lemlib::PID(1.35, 0.0, 0.1);//转90的pid
-    turnSettings0.angularPID = lemlib::PID(1.4, 0.0, 0.09);//取完导入转90的pid
+    turnSettings90.angularPID = lemlib::PID(1.4, 0.0, 0.1);//转90的pid
+    turnSettings0.angularPID = lemlib::PID(1.44, 0.0, 0.09);//取完导入转90的pid
     turnSettings45.angularPID = lemlib::PID(1.4, 0.0, 0.1);
     turnSettingsDT.angularPID = lemlib::PID(1.46, 0.0, 0.1);//倒填
     turnSettingsDZ.angularPID = lemlib::PID(2.5, 0.0, 0.1);//底座--没加0.5
@@ -56,7 +56,7 @@ void auto_skill(int StopFlag) {
         liftCmd = cycle.liftToScore;
         liftGo = true;
         pros::delay(300);
-        GoForWardCurveIMU(0.6, 23.2, 2000, 10.0f);
+        GoForWardCurveIMU(0.5, 23.2, 1900, 10.0f);
         
         left_motors.move(0.27);
         right_motors.move(0.27);
@@ -72,7 +72,7 @@ void auto_skill(int StopFlag) {
         liftCmd = cycle.liftToReset;
         liftGo = true;
         
-        GoForWardCurveIMU(1.0, -20.6, 1200, 11.5f);
+        GoForWardCurveIMU(1.0, -22.4, 1200, 11.5f);
        
         pros::delay(50);
     }
@@ -113,8 +113,8 @@ void auto_skill(int StopFlag) {
     liftCmd = {40, 344, 300};
     liftGo = true;
 
-    LaserGoForWardCurveIMU(0.8,PutLaser+110,2000,300.0f);
-    lemlib::turnTo(28_stDeg, 1000_msec, turnParams, turnSettingsDT);
+    LaserGoForWardCurveIMU(0.8,PutLaser+125,2000,300.0f);
+    lemlib::turnTo(29_stDeg, 1000_msec, turnParams, turnSettingsDT);
     liftCmd = {55, 340, 600};
     liftGo = true;
     GoForWardCurveIMU(0.8,9.0,800,8.0f);
@@ -132,7 +132,7 @@ void auto_skill(int StopFlag) {
 
 
 
-    GoForWardCurveIMU(0.8,-12.2,1200,10.0f);
+    GoForWardCurveIMU(0.9,-15.2,1200,10.0f);
     lemlib::turnTo(180_stDeg, 1000_msec, turnParams, turnSettings0);
     liftCmd = {-55, 359, 600};
     liftGo = true;
@@ -143,8 +143,8 @@ void auto_skill(int StopFlag) {
     liftCmd = {70, 325, 900};
     liftGo = true;
     ClawRevise(false);
-    LaserGoForWardCurveIMU(0.8,PutLaser+110,1600,300.0f);
-    lemlib::turnTo(30_stDeg, 1200_msec, turnParams, turnSettingsDT);
+    LaserGoForWardCurveIMU(0.8,PutLaser+120,1600,300.0f);
+    lemlib::turnTo(28_stDeg, 1200_msec, turnParams, turnSettingsDT);
     
     GoForWardCurveIMU(0.8,9.0,900,8.0f);
     ClawStopIntake();
@@ -157,9 +157,9 @@ void auto_skill(int StopFlag) {
 
 
 
-
+/*
 //王姬路线//
-    GoForWardCurveIMU(0.8,-12.4,1200,10.0f);
+    GoForWardCurveIMU(0.9,-14.2,1200,10.0f);
     lemlib::turnTo(180_stDeg, 1000_msec, turnParams, turnSettings0);
     liftCmd = {-55, 359, 600};
     liftGo = true;
@@ -221,7 +221,7 @@ void auto_skill(int StopFlag) {
     pros::delay(100);
 
 ///////////////////////////////////////////////////////////////////////////////////
-
+*/
 
     GoForWardCurveIMU(1.0,-5,1000,2.0f);
     lemlib::turnTo(0_stDeg, 700_msec, turnParams, turnSettingsDZ);
@@ -230,19 +230,19 @@ void auto_skill(int StopFlag) {
     liftGo = true;
     lemlib::turnTo(38.5_stDeg, 800_msec, turnParams, turnSettings45);
     ClawClose();
-    GoForWardCurve(1.0,46.0,2000,2.0f);
+    GoForWardCurve(1.0,49.0,2000,2.0f);
     //GoForWardCurve(1.0,-2.0,500,4.0f);
     lemlib::turnTo(90_stDeg, 800_msec, turnParams, turnSettings90);
-    GoForWardCurve(1.0,-40.0,2000,2.0f);
+    GoForWardCurve(1.0,-37.0,2000,2.0f);
     left_motors.move(-0.4);
     right_motors.move(-0.4);
-    pros::delay(630);
+    pros::delay(900);
     left_motors.move(-0.2);
     right_motors.move(-0.2);
     TugglePick.move(127);
-    pros::delay(575);
+    pros::delay(620);
     TugglePick.move(0);
-    GoForWardCurve(1.0,40.0,2000,10.0f);
+    GoForWardCurve(1.0,44.0,2000,10.0f);
 
     /*外场通道去翻toggle()
     lemlib::turnTo(-20_stDeg, 800_msec, turnParams, turnSettingsDT);

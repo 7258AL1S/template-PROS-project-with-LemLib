@@ -19,18 +19,18 @@ lemlib::MotorGroup left_motors({-2,-1,-3}, 240_rpm);
 // 右侧：正转端口 1；反转端口 -2, 3
 lemlib::MotorGroup right_motors({4,20,5}, 240_rpm);
 
-pros::Motor    Claw(-10);  // 爪子电机
+pros::Motor    Claw(-21);  // 爪子电机
 pros::Motor    Claw_Rot(-21);         // 爪子俯仰轴旋转电机
 pros::Motor    Claw_return(-21);         // 爪子滚转轴旋转电机
 pros::Rotation ClawRotation(-21);  // 爪子编码器
-pros::Motor    Claw_Left(8);         // 爪子左旋转电机
-pros::Motor    Claw_Right(7);         // 爪子右旋转电机
+pros::Motor    Claw_Left(-10);         // 爪子左旋转电机//现在改了结构，只有这个左旋转电机控制整个夹子旋转
+pros::Motor    Claw_Right(-21);         // 爪子右旋转电机
 
 pros::Motor    TugglePick(-14);  // tuggle拨片
 
 //Intake
-pros::Motor    IntakeFront(-21);  // 吸球电机前
-pros::Motor    IntakeBack(-21);    // 吸球电机后
+pros::Motor    IntakeFront(12);  // 吸球电机前
+pros::Motor    IntakeBack(-15);    // 吸球电机后
 
 
 
@@ -47,6 +47,10 @@ pros::Distance            frontLaser(19);  // 临时端口，之后按实际接�
 //===========================================================
 pros::ADIDigitalOut Piston_tuggle('A');  // 翻筒气动
 pros::ADIDigitalOut Piston_tuggle2('B');  // 翻筒气动
-pros::ADIDigitalOut Piston_claw('H');  // 爪子气动
+
+
+pros::ADIDigitalOut Piston_claw('E');  // 智能口7的三线扩展器A口// 夹子气动
 pros::ADIDigitalOut Piston_pitch45('C');  // 夹子俯仰 45° 气动
 pros::ADIDigitalOut Piston_ClawDown('D');  // 下方爪子气动
+pros::ADIDigitalOut IntakeF('G'); 
+//主控7号端口接了一个智能线缆转三线的转换器，转换器A口是夹子气动

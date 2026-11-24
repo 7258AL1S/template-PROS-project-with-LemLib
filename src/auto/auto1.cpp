@@ -1,4 +1,5 @@
 #include "auto.h"
+#include "motorcontrol.h"
 
 
 void auto1(int StopFlag) {
@@ -29,21 +30,21 @@ void auto1(int StopFlag) {
     lemlib::TurnToParams turnParams;
     lemlib::TurnToSettings turnSettings;
    
-
+////////技能赛的数值是6.5，场地赛的应该6.3。因为场地赛6.5第一步走多了。
     // GoForWard(1.0,-10.3,1000,pid);            // 旧版
-    GoForWardCurve(1.0,6.0,1000,4.2f);        // 新版：Power, Target, FullTime, DecelDist
+    GoForWardCurve(1.0,6.4,1000,4.0f);        // 新版：Power, Target, FullTime, DecelDist
 
 
 
     liftCmd = {38, 325, 500};
     liftGo = true;
     //TurnCurve(1.0, 90.0, 800, 15.0);  
-    turnSettings.angularPID = lemlib::PID(1.35, 0.0, 0.1);
+    turnSettings.angularPID = lemlib::PID(1.35, 0.0, 0.11);
     lemlib::turnTo(-90_stDeg, 900_msec, turnParams, turnSettings);
     GoForWardCurve(1.0,13.5,1000,9.0f); 
     left_motors.move(0.2);
 	right_motors.move(0.2);
-    LiftUpDegree(-28, 350, 550);
+    LiftUpDegree(-29, 350, 550);
     
     pros::delay(10);
     lift1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
@@ -56,8 +57,10 @@ void auto1(int StopFlag) {
     /////
     left_motors.move(0);
 	right_motors.move(0);
-    GoForWardCurveIMU(1.0,-7.7,1000,4.0f);
-
+    GoForWardCurveIMU(1.0,-7.85,1000,4.0f);
+    left_motors.brake();
+	right_motors.brake();
+    pros::delay(100);
     if(StopFlag == 1){
         // 通知后台任务（autoSubsystems/debugTask）退出，避免进入手动阶段后仍在轮询/刷屏
         autoActive = false;
@@ -65,7 +68,7 @@ void auto1(int StopFlag) {
         return;
     }
 
-    turnSettings.angularPID = lemlib::PID(1.43, 0.0, 0.09);
+    turnSettings.angularPID = lemlib::PID(2.0, 0.0, 0.12);
     lemlib::turnTo(-45_stDeg, 900_msec, turnParams, turnSettings);
     liftCmd = {-60, 359, 500};
     liftGo = true;
@@ -77,12 +80,15 @@ void auto1(int StopFlag) {
     GoForWardCurveIMU(1.0,20.3,1600,9.5f);
     pros::delay(50);
     ClawClose();
-
-    liftCmd = {40, 344, 300};
+    pros::delay(150);   
+    ClawStopIntake();
+    liftCmd = {55, 344, 320};
     liftGo = true;
-    GoForWardCurve(1.0,2.3,600,1.0f);
-    turnSettings.angularPID = lemlib::PID(1.32, 0.0, 0.103);
+    GoForWardCurve(1.0,1.0,600,1.0f);
+
+    turnSettings.angularPID = lemlib::PID(1.32, 0.0, 0.11);
     lemlib::turnTo(-180_stDeg, 1200_msec, turnParams, turnSettings);
+    
     liftCmd = {55, 320, 800};
     liftGo = true;
     GoForWardCurveIMU(0.9,10.5,1000,7.0f); 
@@ -102,8 +108,8 @@ void auto1(int StopFlag) {
     /////
     left_motors.move(0);
 	right_motors.move(0);
-
-    GoForWardCurve(1.0,-7.95,1200,3.9f); ///////
+//原来7.9
+    GoForWardCurve(1.0,-7.9,1200,4.0f); ///////
     liftCmd = {-70, 359, 650};
     liftGo = true;
 
@@ -114,15 +120,18 @@ void auto1(int StopFlag) {
         pros::delay(100);
         return;
     }
-
-    turnSettings.angularPID = lemlib::PID(1.41, 0.0, 0.09);
+    left_motors.brake();
+	right_motors.brake();
+    pros::delay(100);
+    turnSettings.angularPID = lemlib::PID(2.0, 0.0, 0.08);
     lemlib::turnTo(-135_stDeg, 900_msec, turnParams, turnSettings);
     ClawOpen();
     ClawIntake();
-    GoForWardCurve(1.0,20.6,1600,8.5f);
+    GoForWardCurve(1.0,20.3,1600,8.5f);
     pros::delay(100);
     ClawClose();
-    //ClawStopIntake();
+    pros::delay(150);   
+    ClawStopIntake();
     liftCmd = {70, 305, 1000};
     liftGo = true;
     if(StopFlag == 3 || StopFlag == 5){//30分；5用于继续衔接AutoSkill
@@ -153,16 +162,16 @@ void auto1(int StopFlag) {
         
     } else if(StopFlag == 4){//AWP
         pros::delay(100);
-        GoForWardCurve(1.0,-16,1600,8.0f);
-        turnSettings.angularPID = lemlib::PID(1.3, 0.0, 0.1);
+        GoForWardCurve(1.0,-17,1600,8.0f);
+        turnSettings.angularPID = lemlib::PID(1.4, 0.0, 0.1);
         lemlib::turnTo(116.57_stDeg, 1200_msec, turnParams, turnSettings);
-        liftCmd = {60, 310, 500};
+        liftCmd = {65, 305, 600};
         liftGo = true;
         GoForWardCurveIMU(1.0,32,2100,8.0f);
         //GoForWardCurve(1.0,35,2500,8.0f);
-        left_motors.move(0.3);
-        right_motors.move(0.3);
-        pros::delay(300);
+        left_motors.move(0.4);
+        right_motors.move(0.4);
+        pros::delay(400);
         LiftUpDegree(-30, 345, 1000);
 
         pros::delay(200);

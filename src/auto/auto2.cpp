@@ -43,7 +43,7 @@ void auto2(int StopFlag) {
     GoForWardCurve(1.0,14.3,1000,9.0f); 
     left_motors.move(0.2);
 	right_motors.move(0.2);
-    LiftUpDegree(-60, 352, 550);
+    LiftUpDegree(-30, 352, 550);
     
     pros::delay(200);
     ClawOpen();
