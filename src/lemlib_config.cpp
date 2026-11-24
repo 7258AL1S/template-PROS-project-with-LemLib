@@ -49,7 +49,7 @@ const std::function<units::Pose()> pose_getter = []() { return odom->getPose(); 
 
 // 退出条件
 const lemlib::ExitConditionGroup<AngleRange> angular_exit_conditions(
-    std::vector{lemlib::ExitCondition<AngleRange>(1_stDeg, 250_msec)});
+    std::vector{lemlib::ExitCondition<AngleRange>(1_stDeg, 100_msec)});
 const lemlib::ExitConditionGroup<Length> lateral_exit_conditions(
     std::vector{lemlib::ExitCondition<Length>(5_in, 250_msec)});
 
