@@ -63,8 +63,30 @@ void turnTo(std::variant<Angle, V2Position> target, Time timeout, TurnToParams p
     }
 
     lemlib::MotionCancelHelper helper(10_msec); // cancel helper
+    bool motionAllowed = true;
+    if (params.minSpeed == 0) {
+        // 普通转弯前先让底盘减速，避免直行刚刹车便被转向指令覆盖。
+        // 等待计入总超时并响应取消；非零 minSpeed 的动作衔接不插入等待。
+        constexpr Time kPreTurnBrakeTime = 100_msec;
+        settings.leftMotors.setBrakeMode(BrakeMode::BRAKE);
+        settings.rightMotors.setBrakeMode(BrakeMode::BRAKE);
+        settings.leftMotors.brake();
+        settings.rightMotors.brake();
+        Timer brakeTimer(kPreTurnBrakeTime);
+        while (!brakeTimer.isDone() && !timer.isDone()) {
+            if (!helper.wait()) {
+                motionAllowed = false;
+                break;
+            }
+        }
+        // 保持原有的转弯模式及单侧锁定行为。
+        settings.leftMotors.setBrakeMode(params.lockedSide == TurnToParams::LockedSide::LEFT
+                                             ? BrakeMode::BRAKE : leftBrakeMode);
+        settings.rightMotors.setBrakeMode(params.lockedSide == TurnToParams::LockedSide::RIGHT
+                                              ? BrakeMode::BRAKE : rightBrakeMode);
+    }
     // loop until the motion has been cancelled, the timer is done, or an exit condition has been met
-    while (helper.wait() && !timer.isDone() && !settings.exitConditions.update(deltaTheta)) {
+    while (motionAllowed && helper.wait() && !timer.isDone() && !settings.exitConditions.update(deltaTheta)) {
         // get the robot's current position
         const Pose pose = settings.poseGetter();
 

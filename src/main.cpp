@@ -140,6 +140,9 @@ void competition_initialize() {
  * 重新启用将重启 task，而非从中断处恢复。
  */
 void autonomous() {
+	// 自动阶段统一使用 BRAKE；手动阶段入口会恢复 COAST。
+	left_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
+	right_motors.setBrakeMode(lemlib::BrakeMode::BRAKE);
 	switch (auton) {
 		case 1:
 			auto1(3);
