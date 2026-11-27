@@ -803,6 +803,11 @@ void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed){
 
 void PickControl(bool tuggleActive){
 	
+	Back_PickControl(tuggleActive);
+	Right_PickControl(tuggleActive);
+}
+
+void Back_PickControl(bool tuggleActive){
 	if(tuggleActive){
 		TugglePick.move(127);
 	}
@@ -810,7 +815,14 @@ void PickControl(bool tuggleActive){
 		TugglePick.move(0);
 	}
 }
-
+void Right_PickControl(bool tuggleActive){
+	if(tuggleActive){
+		TugglePick_Right.move(127);
+	}
+	else{
+		TugglePick_Right.move(0);
+	}
+}
 void TugglePistonControl(bool BtnA, bool BtnY, bool BtnDown, bool Reset){
 	static bool extendedMode = false;
 	static bool prevDown = false;

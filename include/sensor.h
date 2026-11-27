@@ -27,6 +27,7 @@ extern pros::Motor    Claw_Left;         // 爪子左旋转电机
 extern pros::Motor    Claw_Right;         // 爪子右旋转电机
 
 extern pros::Motor    TugglePick;  // tuggle拨片
+extern pros::Motor    TugglePick_Right;  // 右侧 tuggle 拨片
 
 //Intake
 extern pros::Motor    IntakeFront;  // 吸球电机前

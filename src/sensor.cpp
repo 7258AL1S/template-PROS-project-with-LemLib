@@ -27,6 +27,7 @@ pros::Motor    Claw_Left(-10);         // 爪子左旋转电机//现在改了结
 pros::Motor    Claw_Right(-21);         // 爪子右旋转电机
 
 pros::Motor    TugglePick(-14);  // tuggle拨片
+pros::Motor    TugglePick_Right(6);  // tuggle拨片
 
 //Intake
 pros::Motor    IntakeFront(12);  // 吸球电机前

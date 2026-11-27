@@ -182,6 +182,8 @@ void ClawControl(bool IntakePressed,bool OuttakePressed,bool ClawPressed);
  * @param tuggleActive 拨片按下状态
  */
 void PickControl(bool tuggleActive);
+void Back_PickControl(bool tuggleActive);
+void Right_PickControl(bool tuggleActive);
 
 /**
  * @brief 拨片气缸 Down 切换常伸出模式，否则由 A/Y 按住控制（非阻塞）
